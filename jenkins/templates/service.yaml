@@ -1,16 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "jenkins.fullname" . }}
-  namespace: {{ .Values.namespace }}
-  labels:
-    {{- include "jenkins.labels" . | nindent 4 }}
+  name: jenkins-service
+  namespace: devops-tools
+  annotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/path:   /
+      prometheus.io/port:   '8080'
 spec:
-  type: {{ .Values.service.type }}
-  ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
   selector:
-    {{- include "jenkins.selectorLabels" . | nindent 4 }}
+    app: jenkins-server
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 32000
