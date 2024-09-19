@@ -2,7 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jenkins
+<<<<<<< HEAD
   namespace: {{ .Values.namespace }}
+=======
+  namespace: devops-tools
+>>>>>>> f2cf3ed (no vars)
 spec:
   replicas: 1
   selector:
