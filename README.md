@@ -1,6 +1,7 @@
-Running:
+Learning and Running:
 
 - Jenkins
     - Terraform and Ansible Enabled
 - Minio
-    - Learning...
+- Prometheus w/ Grafana Cloud
+    - With Thanos Sidecar
