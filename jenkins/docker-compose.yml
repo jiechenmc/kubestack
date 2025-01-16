@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  jenkin:
+    build: .
+    ports:
+      - 8080:8080
+      - 50000:50000
+    volumes:
+      - JENKINS_HOME:/var/jenkins_home
+
+volumes:
+  JENKINS_HOME:
