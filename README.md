@@ -2,6 +2,7 @@ Learning and Running:
 
 - Jenkins
     - Terraform and Ansible Enabled
-- Minio
+- Minio (S3 Compatible Storage)
 - Prometheus w/ Grafana Cloud
     - With Thanos Sidecar
+- Pterodactyl

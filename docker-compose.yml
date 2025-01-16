@@ -1,0 +1,51 @@
+services:
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    expose:
+      - 9100
+    network_mode: host
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    expose:
+      - 9090
+    network_mode: host
+
+  thanos:
+    volumes:
+        - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    container_name: prometheus-0-sidecar-us1
+    user: root
+    image: quay.io/thanos/thanos:v0.28.0
+    command: sidecar --http-address 0.0.0.0:19090 --grpc-address 0.0.0.0:19190
+        --reloader.config-file /etc/prometheus/prometheus.yml
+        --prometheus.url http://localhost:9090 
+    expose:
+      - 19090
+      - 19190
+    network_mode: host
+
+volumes:
+  prometheus_data: {}
