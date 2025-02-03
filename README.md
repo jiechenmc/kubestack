@@ -5,4 +5,4 @@ Learning and Running:
 - Minio (S3 Compatible Storage)
 - Prometheus w/ Grafana Cloud
     - With Thanos Sidecar
-- Pterodactyl
+- Dapr
