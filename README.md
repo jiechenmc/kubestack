@@ -1,4 +1,4 @@
-Learning and Running on a 3-node k3s Kubernetes cluster with GitOps (Flux or ArgoCD tbd):
+Learning and running highly available applications on a 3-node k3s Kubernetes cluster with GitOps (Flux or ArgoCD tbd):
 
 - Dapr
   - Building event-driven applications.
