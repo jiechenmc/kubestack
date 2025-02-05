@@ -1,8 +1,6 @@
-Learning and Running:
+Learning and Running on a 3 node k3s Kubernetes cluster with GitOps:
 
-- Jenkins
-    - Terraform and Ansible Enabled
+- Dapr
 - Minio (S3 Compatible Storage)
 - Prometheus w/ Grafana Cloud
     - With Thanos Sidecar
-- Dapr
