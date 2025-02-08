@@ -15,15 +15,15 @@ metadata:
   namespace: monitor
   annotations:
   traefik.ingress.kubernetes.io/router.entrypoints: web
-  traefik.ingress.kubernetes.io/router.middlewares: default-minio-strip@kubernetescrd
+  # traefik.ingress.kubernetes.io/router.middlewares: default-minio-strip@kubernetescrd
 
 spec:
   ingressClassName: traefik
   rules:
-    - host: kamrui
+    - host: minio.kamrui
       http:
         paths:
-          - path: /minio
+          - path: /
             pathType: Prefix
             backend:
               service:
