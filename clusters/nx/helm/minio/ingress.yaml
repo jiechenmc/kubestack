@@ -14,7 +14,7 @@ spec:
     - host: kamrui
       http:
         paths:
-          - path: "/minio(/|$)(.*)"
+          - path: "\/minio(\/|$)(.*)"
             pathType: ImplementationSpecific
             backend:
               service:
