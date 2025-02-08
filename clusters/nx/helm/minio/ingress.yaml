@@ -1,21 +1,21 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: grafana-strip
-  namespace: monitor
+  name: minio-strip
+  namespace: minio
 spec:
   stripPrefix:
     prefixes:
-      - "/grafana"
+      - "/minio"
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: grafana-ingress
+  name: minio-ingress
   namespace: monitor
   annotations:
   traefik.ingress.kubernetes.io/router.entrypoints: web
-  traefik.ingress.kubernetes.io/router.middlewares: default-grafana-strip@kubernetescrd
+  traefik.ingress.kubernetes.io/router.middlewares: default-minio-strip@kubernetescrd
 
 spec:
   ingressClassName: traefik
@@ -23,10 +23,10 @@ spec:
     - host: kamrui
       http:
         paths:
-          - path: /grafana
+          - path: /minio
             pathType: Prefix
             backend:
               service:
-                name: my-kube-stack-grafana
+                name: my-kube-stack-minio
                 port:
-                  number: 80
+                  number: 9001
