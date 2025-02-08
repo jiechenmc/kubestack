@@ -4,6 +4,6 @@ namespace: minio
 configMapGenerator:
   - name: minio-values
     files:
-      - values.yaml=helm/minio/values.yaml
+      - values.yaml=values.yaml
 configurations:
   - kustomizeconfig.yaml
