@@ -3,19 +3,13 @@ kind: Ingress
 metadata:
   name: minio-ingress
   namespace: minio
-  annotations:
-  nginx.org/rewrites: "serviceName=my-minio rewrite=/"
 spec:
-  # tls:
-  #   - hosts:
-  #       - kamrui
-  #     secretName: nginx-secret
   ingressClassName: nginx
   rules:
     - host: kamrui
       http:
         paths:
-          - path: /minio/
+          - path: /
             pathType: Prefix
             backend:
               service:
