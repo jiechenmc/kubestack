@@ -15,7 +15,7 @@ metadata:
   namespace: monitor
   annotations:
   traefik.ingress.kubernetes.io/router.entrypoints: web
-  traefik.ingress.kubernetes.io/router.middlewares: default-grafana-strip@kubernetescrd
+  # traefik.ingress.kubernetes.io/router.middlewares: default-grafana-strip@kubernetescrd
 
 spec:
   ingressClassName: traefik
@@ -24,7 +24,7 @@ spec:
       http:
         paths:
           - path: /grafana
-            pathType: Prefix
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: my-kube-stack-grafana
