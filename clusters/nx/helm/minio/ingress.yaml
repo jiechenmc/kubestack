@@ -12,7 +12,7 @@ spec:
     - host: kamrui
       http:
         paths:
-          - path: /minio
+          - path: /
             pathType: Prefix
             backend:
               service:
