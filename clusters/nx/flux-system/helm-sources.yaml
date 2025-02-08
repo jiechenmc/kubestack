@@ -1,0 +1,16 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmChart
+metadata:
+  labels:
+    helm.toolkit.fluxcd.io/name: init
+    helm.toolkit.fluxcd.io/namespace: flux-system
+  name: flux-system-init
+  namespace: flux-system
+spec:
+  chart: prometheus-community
+  interval: 1m0s
+  reconcileStrategy: ChartVersion
+  sourceRef:
+    kind: HelmRepository
+    name: prometheus-community
+  version: "*"
