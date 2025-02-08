@@ -1,12 +1,3 @@
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: grafana-strip
-  namespace: monitor
-spec:
-  stripPrefix:
-    prefixes:
-      - "/grafana"
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -15,7 +6,6 @@ metadata:
   namespace: monitor
   annotations:
   traefik.ingress.kubernetes.io/router.entrypoints: web
-  # traefik.ingress.kubernetes.io/router.middlewares: default-grafana-strip@kubernetescrd
 
 spec:
   ingressClassName: traefik

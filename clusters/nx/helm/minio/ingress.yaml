@@ -1,12 +1,3 @@
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: minio-strip
-  namespace: minio
-spec:
-  stripPrefix:
-    prefixes:
-      - "/minio"
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -15,10 +6,8 @@ metadata:
   namespace: monitor
   annotations:
   traefik.ingress.kubernetes.io/router.entrypoints: web
-  # traefik.ingress.kubernetes.io/router.middlewares: default-minio-strip@kubernetescrd
 
 spec:
-  ingressClassName: traefik
   rules:
     - host: minio.kamrui
       http:
@@ -27,6 +16,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: my-kube-stack-minio
+                name: my-minio
                 port:
                   number: 9001
