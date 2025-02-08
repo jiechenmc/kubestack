@@ -3,6 +3,8 @@ kind: Ingress
 metadata:
   name: minio-ingress
   namespace: minio
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: / # Rewrites the /minio prefix
 spec:
   tls:
     - hosts:
@@ -12,8 +14,8 @@ spec:
     - host: kamrui
       http:
         paths:
-          - path: /
-            pathType: Prefix
+          - path: /minio
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: my-minio
