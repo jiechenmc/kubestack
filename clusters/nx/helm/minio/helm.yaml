@@ -23,5 +23,5 @@ spec:
     name: bitnami
     namespace: minio
   valuesFiles:
-    - values.yaml
+    - helm/minio/values.yaml
   interval: 10m
