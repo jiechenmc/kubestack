@@ -12,7 +12,7 @@ spec:
     - host: kamrui
       http:
         paths:
-          - path: /grafana
+          - path: /
             pathType: ImplementationSpecific
             backend:
               service:
