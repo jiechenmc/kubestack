@@ -2,15 +2,15 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: init
-  namespace: flux-system
+  name: my-kube-stack
+  namespace: monitor
 spec:
   chart:
     spec:
-      chart: prometheus-community
+      chart: kube-prometheus-stack
       reconcileStrategy: ChartVersion
       sourceRef:
         kind: HelmRepository
         name: prometheus-community
-      version: "*"
+      version: 69.1.2
   interval: 1m0s
