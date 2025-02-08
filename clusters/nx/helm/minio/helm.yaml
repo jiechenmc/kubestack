@@ -22,4 +22,6 @@ spec:
     kind: OCIRepository
     name: bitnami
     namespace: minio
+  valuesFiles:
+    - values.yaml
   interval: 10m
