@@ -10,6 +10,7 @@ spec:
     - hosts:
         - kamrui
       secretName: nginx-secret
+  ingressClassName: nginx
   rules:
     - host: kamrui
       http:
