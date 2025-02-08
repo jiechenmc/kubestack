@@ -24,6 +24,5 @@ spec:
     namespace: minio
   valuesFrom:
     - kind: ConfigMap
-      name: my-minio-values
-      valuesKey: values.yaml
+      name: minio-values
   interval: 10m
