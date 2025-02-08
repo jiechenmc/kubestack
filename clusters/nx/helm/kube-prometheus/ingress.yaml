@@ -4,15 +4,15 @@ metadata:
   name: grafana-ingress
   namespace: monitor
   annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  traefik.ingress.kubernetes.io/router.entrypoints: web
+
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
     - host: kamrui
       http:
         paths:
-          - path: /grafana(/|$)(.*)
+          - path: /grafana
             pathType: ImplementationSpecific
             backend:
               service:
