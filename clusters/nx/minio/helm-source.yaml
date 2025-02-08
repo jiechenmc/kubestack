@@ -18,12 +18,8 @@ metadata:
   name: my-minio
   namespace: minio
 spec:
-  chart:
-    spec:
-      chart: minio
-      reconcileStrategy: ChartVersion
-      sourceRef:
-        kind: OCIRepository
-        name: bitnami
-      version: 15.0.2
-  interval: 1m0s
+  chartRef:
+    kind: OCIRepository
+    name: bitnami
+    namespace: minio
+  interval: 10m
