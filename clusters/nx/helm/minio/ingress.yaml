@@ -4,6 +4,10 @@ metadata:
   name: minio-ingress
   namespace: minio
 spec:
+  tls:
+    - hosts:
+        - localhost
+      secretName: nginx-secret
   rules:
     - host: localhost
       http:
