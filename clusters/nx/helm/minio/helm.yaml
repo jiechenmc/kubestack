@@ -22,7 +22,7 @@ spec:
     kind: OCIRepository
     name: bitnami
     namespace: minio
-  # valuesFrom:
-  #   - kind: ConfigMap
-  #     name: minio-values
+  valuesFrom:
+    - kind: ConfigMap
+      name: minio-values
   interval: 10m
