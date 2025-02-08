@@ -3,14 +3,17 @@ kind: Ingress
 metadata:
   name: grafana-ingress
   namespace: monitor
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   rules:
-    - host: kamrui.tail3e464f.ts.net
+    - host: kamrui
       http:
         paths:
-          - path: /
-            pathType: Prefix
+          - path: /grafana(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: my-kube-stack-grafana
