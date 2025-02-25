@@ -6,7 +6,7 @@ metadata:
   name: cloudflared-deployment
   namespace: default
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       pod: cloudflared
@@ -32,7 +32,13 @@ spec:
             - run
           args:
             - --token
-            - $TOKEN
+            - "$(TOKEN)" # Use double quotes for proper interpolation
+          env:
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflared-token-secret # Replace with your actual secret name
+                  key: token
           image: cloudflare/cloudflared:latest
           name: cloudflared
           livenessProbe:
