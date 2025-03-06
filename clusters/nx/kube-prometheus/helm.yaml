@@ -27,4 +27,7 @@ spec:
         kind: HelmRepository
         name: prometheus-community
       version: 69.2.0
+  valuesFrom:
+    - kind: ConfigMap
+      name: kubepromstack-values
   interval: 1m0s
