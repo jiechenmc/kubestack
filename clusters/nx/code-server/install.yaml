@@ -7,6 +7,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
   name: kubestack
+  namespace: code-server
 spec:
   interval: 1m0s
   url: https://github.com/jiechenmc/kubestack
