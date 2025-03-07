@@ -47,7 +47,6 @@ spec:
           - |
             chown -R {{ .Values.securityContext.runAsUser }}:{{ .Values.securityContext.fsGroup }} /home/coder
         securityContext:
-          privileged: true
           runAsUser: {{ .Values.volumePermissions.securityContext.runAsUser }}
         volumeMounts:
         - name: data
@@ -66,6 +65,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.securityContext.enabled }}
           securityContext:
+            privileged: true
             runAsUser: {{ .Values.securityContext.runAsUser }}
           {{- end }}
           {{- if .Values.lifecycle.enabled }}
