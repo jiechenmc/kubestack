@@ -6,8 +6,7 @@ metadata:
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: code-server
-  namespace: code-server
+  name: kubestack
 spec:
   interval: 1m0s
   url: https://github.com/jiechenmc/kubestack
@@ -29,6 +28,6 @@ spec:
       reconcileStrategy: ChartVersion
       sourceRef:
         kind: GitRepository
-        name: code-server
+        name: kubestack
       version: 4.96.4
   interval: 1m0s
