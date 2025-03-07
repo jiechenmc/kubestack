@@ -26,7 +26,7 @@ spec:
         kind: GitRepository
         name: kubestack
       version: 4.96.4
-  valuesFrom:
-    - kind: ConfigMap
-      name: code-server-values
+    valuesFrom:
+      - kind: ConfigMap
+        name: code-server-values
   interval: 1m0s
