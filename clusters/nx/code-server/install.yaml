@@ -13,9 +13,9 @@ spec:
   url: https://github.com/jiechenmc/kubestack
   ref:
     branch: main
-  ignore: |
-    /*
-    !/charts/code-server
+  # ignore: |
+    # /*
+    # !/charts/code-server
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
