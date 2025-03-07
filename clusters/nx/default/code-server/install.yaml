@@ -2,7 +2,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
   name: kubestack
-  namespace: code-server
+  namespace: default
 spec:
   interval: 1m0s
   url: https://github.com/jiechenmc/kubestack
@@ -16,7 +16,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: nx
-  namespace: code-server
+  namespace: default
 spec:
   chart:
     spec:
