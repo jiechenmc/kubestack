@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: code-server
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: code-server
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: code-server
+  namespace: code-server
+spec:
+  interval: 1m0s
+  url: https://github.com/jiechenmc/kubestack
+  ref:
+    branch: main
+  ignore: |
+    /*
+    !/charts/   
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: nx
+  namespace: code-server
+spec:
+  chart:
+    spec:
+      chart: code-server
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: GitRepository
+        name: code-server
+      version: 4.96.4
+  interval: 1m0s
