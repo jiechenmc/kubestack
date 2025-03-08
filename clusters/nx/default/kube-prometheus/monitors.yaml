@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: cloudflared
-  namespace: monitoring
+  namespace: default
   labels:
     release: nx-monitor  # Match this with your Prometheus release name
 spec:
