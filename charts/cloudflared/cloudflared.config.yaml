@@ -50,3 +50,17 @@ spec:
             failureThreshold: 1
             initialDelaySeconds: 10
             periodSeconds: 10
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudflared-service
+  namespace: default
+spec:
+  selector:
+    pod: cloudflared 
+  ports:
+    - protocol: TCP
+      port: 2000   
+      targetPort: 2000  
+  type: ClusterIP 
