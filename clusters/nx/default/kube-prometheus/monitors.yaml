@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cloudflared
+  namespace: monitoring
+  labels:
+    release: nx-monitor  # Match this with your Prometheus release name
+spec:
+  selector:
+    matchLabels:
+      app: cloudflared-service  # Must match the service labels
+  endpoints:
+    - port: metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics

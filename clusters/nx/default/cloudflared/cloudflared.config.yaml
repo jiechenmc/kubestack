@@ -56,11 +56,17 @@ kind: Service
 metadata:
   name: cloudflared-service
   namespace: default
+  labels:
+    app: cloudflared-service
 spec:
   selector:
     pod: cloudflared 
   ports:
     - protocol: TCP
       port: 2000   
-      targetPort: 2000  
+      targetPort: 2000
+  ports:
+    - name: metrics
+      port: 2000
+      targetPort: 2000
   type: ClusterIP 
