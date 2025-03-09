@@ -6,3 +6,5 @@
 #   --disable-network-policy \
 #   --disable traefik \
 #   --cluster-init
+
+kubectl create secret generic cloudflared-token-secret --from-literal=token=$CF_TOKEN
