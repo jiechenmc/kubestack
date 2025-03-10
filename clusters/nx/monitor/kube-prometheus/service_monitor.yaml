@@ -14,5 +14,3 @@ spec:
       interval: 30s
       scrapeTimeout: 10s
       path: /metrics
-  depends_on:
-    - name: nx-monitor
