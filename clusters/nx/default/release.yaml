@@ -2,7 +2,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: nx-monitor
-  namespace: monitor
+  namespace: default
 spec:
   chart:
     spec:
