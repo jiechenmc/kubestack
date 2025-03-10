@@ -21,7 +21,7 @@ spec:
   chart:
     spec:
       chart: ./charts/code-server
-      reconcileStrategy: ChartVersion
+      reconcileStrategy: Revision
       sourceRef:
         kind: GitRepository
         name: kubestack
