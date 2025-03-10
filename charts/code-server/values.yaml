@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   repository: codercom/code-server
   tag: '4.96.4'
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 
 # Specifies one or more secrets to be used when pulling images from a
 # private container repository
@@ -43,13 +43,14 @@ service:
   port: 8080
 
 ingress:
-  enabled: false
+  enabled: true
   #annotations:
   #  kubernetes.io/tls-acme: "true"
-  #hosts:
-  #  - host: code-server.example.loc
-  #    paths:
-  #      - /
+  hosts:
+    - host: code.kamrui
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
   ingressClassName: ""
   #tls:
   #  - secretName: code-server
