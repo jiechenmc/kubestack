@@ -13,6 +13,7 @@ spec:
         name: prometheus-community
         namespace: default
       version: 69.2.0
+  targetNamespace: monitor
   install:
     createNamespace: true
   interval: 1m0s
