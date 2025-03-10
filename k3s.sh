@@ -7,3 +7,5 @@ curl -sfL https://get.k3s.io | K3S_TOKEN=SECRET sh -s - server --server https://
   --cluster-init
 
 kubectl create secret generic cloudflared-token-secret --from-literal=token=$CF_TOKEN   
+
+# sudo apt-get install open-iscsi is needed for longhorn
