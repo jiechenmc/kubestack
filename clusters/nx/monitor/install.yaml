@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  path: "./clusters/nx/monitor/controller"
+  path: "./clusters/nx/monitor/prometheus"
   prune: true
   sourceRef:
     kind: GitRepository
