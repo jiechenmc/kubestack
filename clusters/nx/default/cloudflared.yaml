@@ -9,12 +9,12 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-      pod: cloudflared
+      app: cloudflared
   template:
     metadata:
       creationTimestamp: null
       labels:
-        pod: cloudflared
+        app: cloudflared
     spec:
       securityContext:
         sysctls:
@@ -61,7 +61,7 @@ metadata:
     name: cloudflared
 spec:
   selector:
-    pod: cloudflared
+    app: cloudflared
   ports:
     - name: metrics
       protocol: TCP
