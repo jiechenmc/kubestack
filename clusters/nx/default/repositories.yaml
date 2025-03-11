@@ -27,3 +27,17 @@ spec:
   interval: 1m0s
   provider: generic
   url: https://helm.cilium.io/
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: kubestack
+  namespace: default
+spec:
+  interval: 1m0s
+  url: https://github.com/jiechenmc/kubestack
+  ref:
+    branch: main
+  ignore: |
+    /*
+    !/charts
