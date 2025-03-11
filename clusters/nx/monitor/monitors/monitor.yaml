@@ -4,7 +4,7 @@ metadata:
   name: cloudflared
   namespace: monitor
   labels:
-    release: monitor-nx-monitor
+    release: nx-monitor
 spec:
   selector:
     matchLabels:
