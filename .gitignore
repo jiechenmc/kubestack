@@ -1,0 +1,4 @@
+etc-pihole/config_backups
+etc-pihole/*wal
+etc-pihole/*shm
+etc-pihole/logrotate
