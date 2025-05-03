@@ -5,3 +5,6 @@ logrotate
 gravity_backups
 gravity_old.db
 dhcp.leases
+*.crt
+*.pem
+cli_pw
