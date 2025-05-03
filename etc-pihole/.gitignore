@@ -1,0 +1,7 @@
+config_backups
+*wal
+*shm
+logrotate
+gravity_backups
+gravity_old.db
+dhcp.leases
