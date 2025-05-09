@@ -8,3 +8,4 @@ dhcp.leases
 *.crt
 *.pem
 cli_pw
+listsCache
