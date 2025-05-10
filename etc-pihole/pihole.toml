@@ -1,7 +1,7 @@
 # Pi-hole configuration file (v6.1)
 # Encoding: UTF-8
 # This file is managed by pihole-FTL
-# Last updated on 2025-05-02 23:53:54 EDT
+# Last updated on 2025-05-10 14:43:36 EDT
 
 [dns]
   # Array of upstream DNS servers used by Pi-hole
@@ -407,7 +407,7 @@
   #
   # Possible values are:
   #     <valid IPv4 address> or empty string (""), e.g., "192.168.0.10"
-  start = "10.10.0.2" ### CHANGED, default = ""
+  start = "10.10.0.10" ### CHANGED, default = ""
 
   # End address of the DHCP address pool
   #
