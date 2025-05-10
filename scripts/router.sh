@@ -1,0 +1,48 @@
+#!/usr/bin/bash
+
+# ----------------------------------------------------------------------
+# OS: Rocky Linux 9
+#
+# This script configures a machine as the "router" for a local area network (LAN).
+# It enables IPv4 forwarding and sets up firewall rules for forwarding traffic
+# from the LAN NIC to the WiFi interface, essentially turning the machine into a router.
+#
+# Notes:
+#   - Ensure that the WiFi NIC is already assigned to the 'public' zone.
+# ----------------------------------------------------------------------
+
+# Set the network interface name for the LAN (Ethernet NIC)
+LAN_NIC=eno1
+
+# ----------------------------------------------------------------------
+# Step 1: Add LAN NIC to the 'trusted' firewall zone for traffic forwarding.
+# This allows the machine to trust the LAN NIC to send traffic through.
+# ----------------------------------------------------------------------
+sudo firewall-cmd --zone=trusted --add-interface=$LAN_NIC --permanent
+
+# ----------------------------------------------------------------------
+# Step 2: Enable IPv4 forwarding to allow the machine to forward packets
+# between interfaces (LAN to WiFi).
+# If the line 'net.ipv4.ip_forward = 1' is not already in /etc/sysctl.conf,
+# add it and reload sysctl settings.
+# ----------------------------------------------------------------------
+grep -qxF 'net.ipv4.ip_forward = 1' /etc/sysctl.conf || echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+
+# ----------------------------------------------------------------------
+# Step 3: Enable forwarding of packets between the 'trusted' and 'public'
+# zones in the firewall.
+# ----------------------------------------------------------------------
+sudo firewall-cmd --zone=trusted --add-forward --permanent
+
+# ----------------------------------------------------------------------
+# Step 4: Enable Network Address Translation (NAT) for the 'public' zone.
+# This will allow outgoing internet traffic from LAN to be masqueraded
+# as coming from the router machine itself.
+# ----------------------------------------------------------------------
+sudo firewall-cmd --zone=public --add-masquerade --permanent
+
+# ----------------------------------------------------------------------
+# Step 5: Reload the firewall configuration to apply the changes.
+# ----------------------------------------------------------------------
+sudo firewall-cmd --reload
