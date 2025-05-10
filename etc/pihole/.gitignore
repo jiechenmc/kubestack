@@ -1,0 +1,17 @@
+config_backups/
+migration_backup/
+gravity_backups/
+listsCache/
+*.crt
+*.pem
+*-wal
+*-shm
+logrotate
+gravity_old.db
+pihole-FTL.db
+dhcp.leases
+cli_pw
+adlists.list
+dnsmasq.conf
+hosts
+versions
