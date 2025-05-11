@@ -20,7 +20,7 @@ A highly available 3 node `k3s` cluster is primarily used for exploring `Kuberne
 
 ![image](lab.svg)
 
-The stuff I mainly use is orchestrated using Docker compose since it is easier to maintain and debug.
+I mainly use `Docker` compose since it is easier to maintain and allows me to focus on learning the applications.
 
 ## Applications
 
@@ -28,3 +28,5 @@ The stuff I mainly use is orchestrated using Docker compose since it is easier t
     - `DNS` and `DHCP` server.
 - Prometheus
 - Grafana
+- Loki
+- And more...

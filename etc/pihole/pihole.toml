@@ -1,7 +1,7 @@
 # Pi-hole configuration file (v6.1)
 # Encoding: UTF-8
 # This file is managed by pihole-FTL
-# Last updated on 2025-05-10 22:16:33 EDT
+# Last updated on 2025-05-10 22:47:21 EDT
 
 [dns]
   # Array of upstream DNS servers used by Pi-hole
@@ -100,7 +100,10 @@
   #
   # Possible values are:
   #     Array of custom DNS records each one in HOSTS form: "IP HOSTNAME"
-  hosts = []
+  hosts = [
+    "10.10.0.1 prometheus",
+    "10.10.0.1 prometheus.lan"
+  ] ### CHANGED, default = []
 
   # If set, A and AAAA queries for plain names, without dots or domain parts, are never
   # forwarded to upstream nameservers
@@ -1202,6 +1205,6 @@
   all = false
 
 # Configuration statistics:
-# 156 total entries out of which 146 entries are default
-# --> 10 entries are modified
+# 156 total entries out of which 145 entries are default
+# --> 11 entries are modified
 
