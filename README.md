@@ -18,6 +18,11 @@ A mix of Docker and Kubernetes deployments for learning and breaking things.
 
 A highly available 3 node `k3s` and `kind` cluster is primarily used for exploring `Kubernetes` features such as ingress, stateful deployments, persistent storage management, etc.
 
+<figure>
+  <img src="lab.svg" alt="">
+  <figcaption>Rough depiction of the setup. FluxCD is no longer used.</figcaption>
+</figure>
+
 In addition to the `k3s` and `kind` clusters, I use `Docker` compose since it is easier to maintain and allows me to focus on learning the applications.
 
 ## Applications
@@ -28,3 +33,4 @@ In addition to the `k3s` and `kind` clusters, I use `Docker` compose since it is
     - Grafana, Prometheus, Loki, Alloy
 - Open Telemetry
     - Looking to make some apps implementing OTEL using Go and Python 
+- Jenkins
