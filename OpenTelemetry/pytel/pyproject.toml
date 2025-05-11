@@ -3,7 +3,10 @@ name = "pytel"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.115.12",
+    "opentelemetry-exporter-otlp>=1.33.0",
+    "opentelemetry-instrumentation-fastapi>=0.54b0",
+    "opentelemetry-sdk>=1.33.0",
 ]
