@@ -20,7 +20,7 @@ A highly available 3 node `k3s` cluster is primarily used for exploring `Kuberne
 
 ![image](lab.svg)
 
-I mainly use `Docker` compose since it is easier to maintain and allows me to focus on learning the applications.
+In addition to the `k3s` cluster, I use `Docker` compose since it is easier to maintain and allows me to focus on learning the applications.
 
 ## Applications
 
