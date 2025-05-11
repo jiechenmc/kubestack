@@ -18,8 +18,6 @@ A mix of Docker and Kubernetes deployments for learning and breaking things.
 
 A highly available 3 node `k3s` and `kind` cluster is primarily used for exploring `Kubernetes` features such as ingress, stateful deployments, persistent storage management, etc.
 
-![image](lab.svg)
-
 In addition to the `k3s` and `kind` clusters, I use `Docker` compose since it is easier to maintain and allows me to focus on learning the applications.
 
 ## Applications

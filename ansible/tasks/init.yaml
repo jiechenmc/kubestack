@@ -1,0 +1,47 @@
+- name: Install Development Tools on Rocky Linux
+  hosts: rocky
+  become: true
+  tasks:
+    - name: Install "Development Tools" group
+      dnf:
+        name: "@Development Tools"
+        state: present
+
+- name: Install Oh My Zsh on Rocky Linux
+  hosts: rocky
+  become: true
+  tasks:
+    - name: Install Zsh if not already installed
+      dnf:
+        name: zsh
+        state: present
+
+    - name: Install Oh My Zsh
+      shell: |
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+      args:
+        creates: /home/{{ ansible_user }}/.oh-my-zsh 
+
+    - name: Change default shell to Zsh
+      user:
+        name: "{{ ansible_user }}"
+        shell: /usr/bin/zsh
+
+- name: Install Homebrew on Rocky Linux
+  become: true
+  tasks:
+    - name: Install Homebrew using the official script
+      shell: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      args:
+        creates: /home/linuxbrew/.linuxbrew/bin/brew  
+
+    - name: Add Homebrew to the PATH for the current user
+      lineinfile:
+        path: /home/{{ ansible_user }}/.zshrc
+        line: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
+        create: yes
+
+    - name: Apply the changes to the shell profile
+      shell: source /home/{{ ansible_user }}/.zshrc
+      become: false
