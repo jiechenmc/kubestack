@@ -15,11 +15,11 @@ A mix of Docker and Kubernetes deployments for learning and breaking things.
 
 ## Setup
 
-A highly available 3 node `k3s` cluster is used mainly for learning `Kubernetes` and `Helm`.
+A highly available 3 node `k3s` cluster is used mainly for learning features of `Kubernetes` and `Helm`.
 
 ![image](lab.svg)
 
-The stuff I actually use is orchestrated using Docker compose since it is easier to maintain and debug.
+The stuff I mainly use is orchestrated using Docker compose since it is easier to maintain and debug.
 
 ## Applications
 
