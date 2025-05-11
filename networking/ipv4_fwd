@@ -11,7 +11,7 @@
 #   - Ensure that the WiFi NIC is already assigned to the 'public' zone.
 # ----------------------------------------------------------------------
 
-# Set the network interface name for the LAN (Ethernet NIC)
+# Set the network interface name for the LAN
 LAN_NIC=eno1
 
 # ----------------------------------------------------------------------
