@@ -1,4 +1,5 @@
 # Homelab Stuff 
+
 A mix of Docker and Kubernetes deployments for learning and breaking things.
 
 ## Nodes
@@ -13,9 +14,9 @@ A mix of Docker and Kubernetes deployments for learning and breaking things.
 - 32GB DDR4 RAM
 - Rocky Linux 9.5
 
-## Setup
+## Deployment
 
-A highly available 3 node `k3s` cluster is used mainly for learning features of `Kubernetes` and `Helm`.
+A highly available 3 node `k3s` cluster is primarily used for exploring `Kubernetes` features such as ingress, stateful deployments, persistent storage management, etc.
 
 ![image](lab.svg)
 
@@ -23,15 +24,7 @@ The stuff I mainly use is orchestrated using Docker compose since it is easier t
 
 ## Applications
 
-### Pi-hole
-
-`DNS` and `DHCP` server.
-
-### Prometheus
-
-Monitoring
-
-### Grafana
-
-Monitoring Visualization
-
+- Pi-hole
+    - `DNS` and `DHCP` server.
+- Prometheus
+- Grafana
