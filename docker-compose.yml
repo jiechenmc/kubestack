@@ -11,11 +11,12 @@ services:
       #- './etc-dnsmasq.d:/etc/dnsmasq.d'
     cap_add:
       - NET_ADMIN
+      - SYS_TIME
       - SYS_NICE
     restart: unless-stopped
 
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:3.4
     container_name: loki
     ports:
       - "3100:3100"
