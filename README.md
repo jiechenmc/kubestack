@@ -26,7 +26,6 @@ In addition to the `k3s` and `kind` clusters, I use `Docker` compose since it is
 
 - Pi-hole
     - Pi-hole is a DNS and DHCP server. I use the `DNS` server to block social media when I have to study, and the `DHCP` server to assign IP to my virtual machines and `JetKVM`.
-- Prometheus
-- Grafana
-- Loki
+- Grafana Observability Stack
+    - Grafana, Prometheus, Loki, Alloy
 - And more...

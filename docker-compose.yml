@@ -21,15 +21,17 @@ services:
       - "3100:3100"
     volumes:
       - ./etc/loki:/etc/loki
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/loki.yaml
 
-  promtail:
-    image: grafana/promtail:latest
-    container_name: promtail
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
     volumes:
-      - /var/log:/var/log
-      - ./etc/promtail:/etc/promtail
-    command: -config.file=/etc/promtail/config.yml
+      - ./etc/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:  run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    ports:
+      - 12345:12345
 
   prometheus:
     image: prom/prometheus:latest
