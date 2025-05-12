@@ -1,3 +1,0 @@
-[submodule "kube"]
-	path = kube
-	url = git@github.com:jiechenmc/kube.git
