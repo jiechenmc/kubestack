@@ -11,11 +11,11 @@ services:
     
   tempo:
     container_name: tempo
-    image: *tempoImage
+    image: grafana/tempo:latest
     command: [ "-config.file=/etc/tempo.yml" ]
     volumes:
       - ./etc/tempo/tempo.yml:/etc/tempo.yml
-      - tempo-data:/var/tempo
+      - tempo_data:/var/tempo
     ports:
       - "14268:14268"  # jaeger ingest
       - "3200:3200"   # tempo
@@ -24,7 +24,6 @@ services:
       - "4318:4318"  # otlp http
       - "9411:9411"   # zipkin
     depends_on:
-      - init
       - memcached
 
   pyroscope:
