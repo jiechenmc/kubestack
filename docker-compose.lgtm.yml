@@ -3,10 +3,13 @@ services:
   memcached:
     image: memcached:1.6.29
     container_name: memcached
+    ports:
+      - "11211:11211"
     environment:
-      - MEMCACHED_MAX_MEMORY=64m
-      - MEMCACHED_THREADS=4
-    network_mode: host
+      - MEMCACHED_MAX_MEMORY=64m  # Set the maximum memory usage
+      - MEMCACHED_THREADS=4       # Number of threads to use
+    networks:
+      - lgtm
 
   tempo:
     container_name: tempo
@@ -15,22 +18,36 @@ services:
     volumes:
       - ./etc/tempo/tempo.yml:/etc/tempo.yml
       - tempo_data:/var/tempo
+    ports:
+      - "14268:14268"  # jaeger ingest
+      - "3200:3200"    # tempo
+      - "9095:9095"    # tempo grpc
+      - "4317:4317"    # otlp grpc
+      - "4318:4318"    # otlp http
+      - "9411:9411"    # zipkin
     depends_on:
       - memcached
-    network_mode: host
+    networks:
+      - lgtm
 
   pyroscope:
     container_name: pyroscope
     image: grafana/pyroscope:latest
-    network_mode: host
+    ports:
+      - 4040:4040
+    networks:
+      - lgtm
 
   loki:
     image: grafana/loki:3.4
     container_name: loki
+    ports:
+      - "3100:3100"
     volumes:
       - ./etc/loki:/etc/loki
     command: -config.file=/etc/loki/loki.yaml
-    network_mode: host
+    networks:
+      - lgtm
 
   alloy:
     image: grafana/alloy:latest
@@ -39,18 +56,24 @@ services:
       - ./etc/alloy/config.alloy:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock
     command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
-    network_mode: host
+    ports:
+      - 12345:12345
+    networks:
+      - lgtm
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
     restart: unless-stopped
     volumes:
       - ./etc/prometheus:/etc/prometheus
       - prom_data:/prometheus
-    network_mode: host
+    networks:
+      - lgtm
 
   node_exporter:
     image: quay.io/prometheus/node-exporter:latest
@@ -61,19 +84,28 @@ services:
     restart: unless-stopped
     volumes:
       - '/:/host:ro,rslave'
-    network_mode: host
+    networks:
+      - lgtm
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    ports:
+      - 3000:3000
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./etc/grafana:/etc/grafana/provisioning/datasources
-    network_mode: host
+    networks:
+      - lgtm
 
 volumes:
   prom_data:
   tempo_data:
+
+networks:
+  lgtm:
+    name: lgtm
+    external: true
