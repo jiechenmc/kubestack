@@ -7,3 +7,4 @@
 
   tasks:
     - import_tasks: tasks/init.yml
+    - import_tasks: tasks/brew.yml
