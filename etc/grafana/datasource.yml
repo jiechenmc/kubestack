@@ -3,7 +3,7 @@ apiVersion: 1
 datasources:
 - name: Prometheus
   type: prometheus
-  url: http://localhost:9090 
+  url: http://prometheus:9090 
   isDefault: true
   access: proxy
   editable: true
@@ -11,20 +11,20 @@ datasources:
 - name: Loki
   type: loki
   access: proxy 
-  url: http://localhost:3100
+  url: http://loki:3100
   basicAuth: false
   isDefault: false 
 
 - name: Tempo
   type: tempo
   access: proxy 
-  url: http://localhost:3200
+  url: http://tempo:3200
   basicAuth: false
   isDefault: false 
 
 - name: Pyroscope
   type: grafana-pyroscope-datasource
   access: proxy 
-  url: http://localhost:4040
+  url: http://pyroscope:4040
   basicAuth: false
   isDefault: false 
