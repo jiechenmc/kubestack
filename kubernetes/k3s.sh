@@ -1,13 +1,15 @@
 curl -sfL https://get.k3s.io | K3S_TOKEN=SECRET sh -s - server \
   --disable local-storage \
   --disable-helm-controller \
+  --write-kubeconfig-mode 644 \
   --cluster-init
 
 
 
-curl -sfL https://get.k3s.io | K3S_TOKEN=SECRET sh -s - server --server https://10.0.0.60:6443 \
+curl -sfL https://get.k3s.io | K3S_TOKEN=SECRET sh -s - server --server https://10.10.0.1:6443 \
   --disable local-storage \
   --disable-helm-controller \
+  --write-kubeconfig-mode 644 \
   --cluster-init
 
 # kubectl create secret generic cloudflared-token-secret --from-literal=token=$CF_TOKEN   
