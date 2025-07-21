@@ -1,5 +1,3 @@
-SERVER_IP=...
-
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
 curl -sfL https://get.k3s.io | K3S_TOKEN=SECRET sh -s - server --server https://$SERVER_IP:6443 \
