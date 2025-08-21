@@ -1,0 +1,4 @@
+- name: Install Development Tools on Rocky Linux
+  ansible.builtin.dnf:
+    name: "@Development Tools"
+    state: present

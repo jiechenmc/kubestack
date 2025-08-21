@@ -1,0 +1,16 @@
+- name: Install Zsh if not already installed
+  dnf:
+    name: zsh
+    state: present
+
+- name: Install Oh My Zsh
+  shell: |
+    yes | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  args:
+    creates: /home/{{ ansible_user }}/.oh-my-zsh
+  become: false
+
+- name: Change default shell to Zsh
+  user:
+    name: "{{ ansible_user }}"
+    shell: /usr/bin/zsh

@@ -1,3 +1,0 @@
-- community.general.homebrew:
-    name: helm
-    state: present

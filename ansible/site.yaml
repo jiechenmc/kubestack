@@ -1,10 +1,12 @@
 ---
-- name: root
-  hosts: all
+- name: Configure Rocky Linux Workstation
+  hosts: server
   become: true
-  become_method: sudo
-  remote_user: admin
-
-  tasks:
-    - import_tasks: tasks/init.yml
-    - import_tasks: tasks/brew.yml
+  become_method: ansible.builtin.sudo
+  remote_user: rocky
+  roles:
+    - devtools
+    - ohmyzsh
+    - homebrew
+    - helm
+    - k3s
