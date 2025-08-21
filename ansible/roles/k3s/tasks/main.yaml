@@ -293,7 +293,7 @@
       become: false
       block:
         - name: Ensure Cilium Helm repo is present
-          community.kubernetes.helm_repository:
+          kubernetes.core.helm:
             name: cilium
             repo_url: "https://helm.cilium.io/"
 
@@ -304,7 +304,7 @@
           changed_when: "'Update Complete.' in k3s_helm_update.stdout"
 
         - name: Deploy or upgrade Cilium
-          community.kubernetes.helm:
+          kubernetes.core.helm:
             name: cilium
             chart_ref: cilium/cilium
             release_namespace: kube-system
