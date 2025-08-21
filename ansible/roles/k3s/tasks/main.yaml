@@ -1,20 +1,15 @@
 ---
-- name: Get k3s installed version
-  ansible.builtin.command: k3s --version
-  register: k3s_version_output
+- name: Uninstall K3s if it is installed
+  ansible.builtin.command: /usr/local/bin/k3s-uninstall.sh
+  when:
+    - not ansible_check_mode
   changed_when: false
   ignore_errors: true
 
-- name: Set k3s installed version
-  when: not ansible_check_mode and k3s_version_output.rc == 0
-  ansible.builtin.set_fact:
-    k3s_installed_version: "{{ k3s_version_output.stdout_lines[0].split(' ')[2] }}"
-
-# We should be downloading and installing the newer version only if we are in one of the following cases :
-#   - we couldn't get k3s installed version in the first task of this role
-#   - the installed version of K3s on the nodes is older than the requested version in ansible vars
 - name: Download artifact only if needed
-  when: not ansible_check_mode and ( k3s_version_output.rc != 0 or k3s_installed_version is version(k3s_version, '<') )
+  when:
+    - not ansible_check_mode
+
   block:
     - name: Download K3s install script
       ansible.builtin.get_url:
@@ -111,7 +106,7 @@
 
     - name: Check whether kubectl is installed on control node
       ansible.builtin.command: "kubectl"
-      register: kubectl_installed
+      register: k3s_kubectl_installed
       ignore_errors: true
       delegate_to: 127.0.0.1
       become: false
@@ -129,7 +124,7 @@
 
     - name: Apply K3S kubeconfig to control node
       when:
-        - kubectl_installed.rc == 0
+        - k3s_kubectl_installed.rc == 0
         - k3s_copy_yaml_file.changed
       block:
         - name: Copy kubeconfig to control node
@@ -143,9 +138,9 @@
             KUBECONFIG={{ kubeconfig }} kubectl config set-cluster default --server=https://{{ api_endpoint }}:{{ api_port }}
           delegate_to: 127.0.0.1
           become: false
-          register: csa_result
+          register: k3s_csa_result
           changed_when:
-            - csa_result.rc == 0
+            - k3s_csa_result.rc == 0
 
         - name: Setup kubeconfig context on control node - {{ cluster_context }}
           when: kubeconfig == "~/.kube/config.new"
@@ -183,7 +178,7 @@
 
         - name: Store Master node-token
           ansible.builtin.set_fact:
-            k3s_token: "{{ k3s_node_token.content | b64decode | regex_replace('\n', '') }}"
+            k3s_node_token: "{{ k3s_node_token.content | b64decode | regex_replace('\n', '') }}"
 
 - name: Start other server if any and verify status
   when:
@@ -192,7 +187,7 @@
   block:
     - name: Get the token from the first server
       ansible.builtin.set_fact:
-        k3s_token: "{{ hostvars[groups[server_group][0]].token }}"
+        k3s_token: "{{ hostvars[groups[server_group][0]].k3s_node_token }}"
 
     - name: Add service environment variables
       when: extra_service_envs is defined
@@ -205,7 +200,7 @@
       ansible.builtin.lineinfile:
         state: absent
         path: "{{ systemd_dir }}/k3s.service.env"
-        regexp: "^K3S_TOKEN=\\s*(?!{{ token }}\\s*$)"
+        regexp: "^K3S_TOKEN=\\s*(?!{{ k3s_token }}\\s*$)"
 
     - name: Add the token for joining the cluster to the environment
       no_log: true # avoid logging the server token
@@ -213,7 +208,7 @@
         path: "{{ systemd_dir }}/k3s.service.env"
         line: "{{ item }}"
       with_items:
-        - "K3S_TOKEN={{ token }}"
+        - "K3S_TOKEN={{ k3s_token }}"
 
     - name: Copy K3s service file [HA]
       ansible.builtin.template:
@@ -247,8 +242,8 @@
       ansible.builtin.command:
         cmd: >
           k3s kubectl get nodes -l "node-role.kubernetes.io/control-plane=true" -o=jsonpath="{.items[*].metadata.name}"
-      register: nodes
-      until: nodes.rc == 0 and (nodes.stdout.split() | length) == (groups[server_group] | length)
+      register: k3s_nodes
+      until: k3s_nodes.rc == 0 and (k3s_nodes.stdout.split() | length) == (groups[server_group] | length)
       retries: 20
       delay: 10
       changed_when: false

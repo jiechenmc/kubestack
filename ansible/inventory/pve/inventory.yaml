@@ -1,22 +1,21 @@
 k3s_cluster:
   children:
     server:
-      hosts:
-        44.203.176.180:
-        52.55.218.211:
+      hosts: {}
     agent:
       hosts: {}
 
   vars:
     ansible_port: 22
     k3s_version: v1.33.3+k3s1
-    # token: "SECRET"
+    token: "SECRET"
     api_endpoint: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
 
     # Optional vars
-    extra_server_args: |
-      --tls-san {{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }} --flannel-backend none --disable-network-policy --disable-helm-controller
-
+    extra_server_args: "--flannel-backend none \
+      --disable-network-policy \
+      --disable-helm-controller \
+      --cluster-init"
     # extra_agent_args: ""
     # cluster_context: k3s-ansible
     # extra_service_envs: ["ENV_VAR1=VALUE1", "ENV_VAR2=VALUE2"]
