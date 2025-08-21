@@ -166,7 +166,7 @@
 
     - name: Get the token if randomly generated
       when: token is not defined
-      delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+      delegate_to: "{{ api_endpoint }}"
       block:
         - name: Wait for token
           ansible.builtin.wait_for:
@@ -310,7 +310,7 @@
             release_namespace: kube-system
             create_namespace: false
             values:
-              k8sServiceHost: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+              k8sServiceHost: "{{ api_endpoint }}"
               k8sServicePort: 6443
               kubeProxyReplacement: true
               ipam:
