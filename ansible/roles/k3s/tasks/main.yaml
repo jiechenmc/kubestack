@@ -108,7 +108,8 @@
       ansible.builtin.command: "kubectl"
       register: k3s_kubectl_installed
       ignore_errors: true
-      delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+      # delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+      delegate_to: 127.0.0.1
       become: false
       changed_when: false
 
@@ -133,13 +134,23 @@
             dest: "{{ kubeconfig }}"
             flat: true
 
+        - name: Change server address in kubeconfig on control node
+          ansible.builtin.shell: |
+            KUBECONFIG={{ kubeconfig }} kubectl config set-cluster default --server=https://{{ api_endpoint }}:{{ api_port }}
+          delegate_to: 127.0.0.1
+          become: false
+          register: k3s_csa_result
+          changed_when:
+            - k3s_csa_result.rc == 0
+
         - name: Setup kubeconfig context on control node - {{ cluster_context }}
           when: kubeconfig == "~/.kube/config.new"
           ansible.builtin.replace:
             path: "{{ kubeconfig }}"
             regexp: "default"
             replace: "{{ cluster_context }}"
-          delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+          # delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+          delegate_to: 127.0.0.1
           become: false
 
         - name: Merge with any existing kubeconfig on control node
@@ -149,7 +160,8 @@
             KUBECONFIG={{ kubeconfig }}:~/.kube/config kubectl config set-context {{ cluster_context }} --user={{ cluster_context }} --cluster={{ cluster_context }}
             KUBECONFIG={{ kubeconfig }}:~/.kube/config kubectl config view --flatten > ${TFILE}
             mv ${TFILE} ~/.kube/config
-          delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+          # delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+          delegate_to: 127.0.0.1
           become: false
           register: k3s_mv_result
           changed_when:
