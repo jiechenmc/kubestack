@@ -318,5 +318,9 @@
                 operator:
                   clusterPoolIPv4PodCIDRList:
                     - "10.42.0.0/16"
-              hubble.relay.enabled: true
-              hubble.ui.enabled: true
+              hubble:
+                enabled: true
+                relay:
+                  enabled: true
+                ui:
+                  enabled: true
