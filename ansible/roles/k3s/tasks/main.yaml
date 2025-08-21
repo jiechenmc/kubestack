@@ -108,7 +108,7 @@
       ansible.builtin.command: "kubectl"
       register: k3s_kubectl_installed
       ignore_errors: true
-      delegate_to: 127.0.0.1
+      delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
       become: false
       changed_when: false
 
@@ -136,7 +136,7 @@
         - name: Change server address in kubeconfig on control node
           ansible.builtin.shell: |
             KUBECONFIG={{ kubeconfig }} kubectl config set-cluster default --server=https://{{ api_endpoint }}:{{ api_port }}
-          delegate_to: 127.0.0.1
+          delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
           become: false
           register: k3s_csa_result
           changed_when:
@@ -148,7 +148,7 @@
             path: "{{ kubeconfig }}"
             regexp: "default"
             replace: "{{ cluster_context }}"
-          delegate_to: 127.0.0.1
+          delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
           become: false
 
         - name: Merge with any existing kubeconfig on control node
@@ -158,7 +158,7 @@
             KUBECONFIG={{ kubeconfig }}:~/.kube/config kubectl config set-context {{ cluster_context }} --user={{ cluster_context }} --cluster={{ cluster_context }}
             KUBECONFIG={{ kubeconfig }}:~/.kube/config kubectl config view --flatten > ${TFILE}
             mv ${TFILE} ~/.kube/config
-          delegate_to: 127.0.0.1
+          delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
           become: false
           register: k3s_mv_result
           changed_when:
@@ -237,6 +237,36 @@
         state: started
         enabled: true
 
+    - name: Setup kubectl for user
+      when: user_kubectl
+      block:
+        - name: Create directory .kube
+          ansible.builtin.file:
+            path: ~{{ ansible_user }}/.kube
+            state: directory
+            owner: "{{ ansible_user }}"
+            mode: "u=rwx,g=rx,o="
+
+        - name: Copy config file to user home directory
+          ansible.builtin.copy:
+            src: /etc/rancher/k3s/k3s.yaml
+            dest: ~{{ ansible_user }}/.kube/config
+            remote_src: true
+            owner: "{{ ansible_user }}"
+            mode: "u=rw,g=,o="
+
+        - name: Configure default KUBECONFIG for user
+          ansible.builtin.lineinfile:
+            path: ~{{ ansible_user }}/.zshrc
+            regexp: "export KUBECONFIG=~/.kube/config"
+            line: "export KUBECONFIG=~/.kube/config # Added by k3s-ansible"
+            state: present
+
+        - name: Configure kubectl autocomplete
+          ansible.builtin.lineinfile:
+            path: ~{{ ansible_user }}/.zshrc
+            regexp: '\.\s+<\(kubectl completion zsh\)'
+            line: ". <(kubectl completion zsh)  # Added by k3s-ansible"
     - name: Verify that all server nodes joined
       when: not ansible_check_mode and (groups[server_group] | length) > 1
       ansible.builtin.command:
@@ -247,34 +277,3 @@
       retries: 20
       delay: 10
       changed_when: false
-
-- name: Setup kubectl for user
-  when: user_kubectl
-  block:
-    - name: Create directory .kube
-      ansible.builtin.file:
-        path: ~{{ ansible_user }}/.kube
-        state: directory
-        owner: "{{ ansible_user }}"
-        mode: "u=rwx,g=rx,o="
-
-    - name: Copy config file to user home directory
-      ansible.builtin.copy:
-        src: /etc/rancher/k3s/k3s.yaml
-        dest: ~{{ ansible_user }}/.kube/config
-        remote_src: true
-        owner: "{{ ansible_user }}"
-        mode: "u=rw,g=,o="
-
-    - name: Configure default KUBECONFIG for user
-      ansible.builtin.lineinfile:
-        path: ~{{ ansible_user }}/.zshrc
-        regexp: "export KUBECONFIG=~/.kube/config"
-        line: "export KUBECONFIG=~/.kube/config # Added by k3s-ansible"
-        state: present
-
-    - name: Configure kubectl autocomplete
-      ansible.builtin.lineinfile:
-        path: ~{{ ansible_user }}/.zshrc
-        regexp: '\.\s+<\(kubectl completion zsh\)'
-        line: ". <(kubectl completion zsh)  # Added by k3s-ansible"
