@@ -133,15 +133,6 @@
             dest: "{{ kubeconfig }}"
             flat: true
 
-        - name: Change server address in kubeconfig on control node
-          ansible.builtin.shell: |
-            KUBECONFIG={{ kubeconfig }} kubectl config set-cluster default --server=https://{{ api_endpoint }}:{{ api_port }}
-          delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
-          become: false
-          register: k3s_csa_result
-          changed_when:
-            - k3s_csa_result.rc == 0
-
         - name: Setup kubeconfig context on control node - {{ cluster_context }}
           when: kubeconfig == "~/.kube/config.new"
           ansible.builtin.replace:
@@ -241,44 +232,51 @@
         state: started
         enabled: true
 
+    - name: Setup kubectl for user
+      when: user_kubectl
+      block:
+        - name: Create directory .kube
+          ansible.builtin.file:
+            path: ~{{ ansible_user }}/.kube
+            state: directory
+            owner: "{{ ansible_user }}"
+            mode: "u=rwx,g=rx,o="
+
+        - name: Copy config file to user home directory
+          ansible.builtin.copy:
+            src: /etc/rancher/k3s/k3s.yaml
+            dest: ~{{ ansible_user }}/.kube/config
+            remote_src: true
+            owner: "{{ ansible_user }}"
+            mode: "u=rw,g=,o="
+
+        - name: Configure default KUBECONFIG for user
+          ansible.builtin.lineinfile:
+            path: ~{{ ansible_user }}/.zshrc
+            regexp: "export KUBECONFIG=~/.kube/config"
+            line: "export KUBECONFIG=~/.kube/config # Added by k3s-ansible"
+            state: present
+
+        - name: Configure kubectl autocomplete
+          ansible.builtin.lineinfile:
+            path: ~{{ ansible_user }}/.zshrc
+            regexp: '\.\s+<\(kubectl completion zsh\)'
+            line: ". <(kubectl completion zsh)  # Added by k3s-ansible"
+
     - name: Verify that all server nodes joined
       when: not ansible_check_mode and (groups[server_group] | length) > 1
       ansible.builtin.command:
         cmd: >
-          k3s kubectl get nodes -l "node-role.kubernetes.io/control-plane=true" -o=jsonpath="{.items[*].metadata.name}"
+          /usr/local/bin/k3s kubectl get nodes -l "node-role.kubernetes.io/control-plane=true" -o=jsonpath="{.items[*].metadata.name}"
       register: k3s_nodes
       until: k3s_nodes.rc == 0 and (k3s_nodes.stdout.split() | length) == (groups[server_group] | length)
-      retries: 20
+      retries: 6
       delay: 10
       changed_when: false
 
-- name: Setup kubectl for user
-  when: user_kubectl
-  block:
-    - name: Create directory .kube
-      ansible.builtin.file:
-        path: ~{{ ansible_user }}/.kube
-        state: directory
-        owner: "{{ ansible_user }}"
-        mode: "u=rwx,g=rx,o="
-
-    - name: Copy config file to user home directory
-      ansible.builtin.copy:
-        src: /etc/rancher/k3s/k3s.yaml
-        dest: ~{{ ansible_user }}/.kube/config
-        remote_src: true
-        owner: "{{ ansible_user }}"
-        mode: "u=rw,g=,o="
-
-    - name: Configure default KUBECONFIG for user
-      ansible.builtin.lineinfile:
-        path: ~{{ ansible_user }}/.zshrc
-        regexp: "export KUBECONFIG=~/.kube/config"
-        line: "export KUBECONFIG=~/.kube/config # Added by k3s-ansible"
-        state: present
-
-    - name: Configure kubectl autocomplete
-      ansible.builtin.lineinfile:
-        path: ~{{ ansible_user }}/.zshrc
-        regexp: '\.\s+<\(kubectl completion zsh\)'
-        line: ". <(kubectl completion zsh)  # Added by k3s-ansible"
+    - name: Show which nodes joined
+      ansible.builtin.debug:
+        msg:
+          - "Nodes joined: {{ k3s_nodes.stdout.split() }}"
+          - "Expected count: {{ groups[server_group] | length }}"
+          - "Actual count: {{ k3s_nodes.stdout.split() | length }}"
