@@ -108,7 +108,6 @@
       ansible.builtin.command: "kubectl"
       register: k3s_kubectl_installed
       ignore_errors: true
-      # delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
       delegate_to: 127.0.0.1
       become: false
       changed_when: false
@@ -149,7 +148,6 @@
             path: "{{ kubeconfig }}"
             regexp: "default"
             replace: "{{ cluster_context }}"
-          # delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
           delegate_to: 127.0.0.1
           become: false
 
@@ -160,7 +158,6 @@
             KUBECONFIG={{ kubeconfig }}:~/.kube/config kubectl config set-context {{ cluster_context }} --user={{ cluster_context }} --cluster={{ cluster_context }}
             KUBECONFIG={{ kubeconfig }}:~/.kube/config kubectl config view --flatten > ${TFILE}
             mv ${TFILE} ~/.kube/config
-          # delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
           delegate_to: 127.0.0.1
           become: false
           register: k3s_mv_result
@@ -169,23 +166,21 @@
 
     - name: Get the token if randomly generated
       when: token is not defined
+      delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
       block:
         - name: Wait for token
           ansible.builtin.wait_for:
             path: /var/lib/rancher/k3s/server/token
-          delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
 
         - name: Read node-token from master
           ansible.builtin.slurp:
             src: /var/lib/rancher/k3s/server/token
           register: k3s_node_token
-          delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
 
         - name: Store Master node-token
           ansible.builtin.set_fact:
             k3s_node_token: "{{ k3s_node_token.content | b64decode | regex_replace('\n', '') }}"
           run_once: true
-          delegate_to: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
 
 - name: Start other server if any and verify status
   when:
