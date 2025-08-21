@@ -294,6 +294,7 @@
       block:
         - name: Ensure Cilium Helm repo is present
           kubernetes.core.helm:
+            release_namespace: kube-system
             name: cilium
             repo_url: "https://helm.cilium.io/"
 
@@ -317,3 +318,5 @@
                 operator:
                   clusterPoolIPv4PodCIDRList:
                     - "10.42.0.0/16"
+              hubble.relay.enabled: true
+              hubble.ui.enabled: true
