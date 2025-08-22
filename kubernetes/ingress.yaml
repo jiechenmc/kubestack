@@ -17,7 +17,7 @@ spec:
                 name: hubble-ui
                 port:
                   number: 80
-  tls:
-    - hosts:
-        - ec2-44-203-176-180.compute-1.amazonaws.com
-      secretName: hubble-ui-tls
+  # tls:
+  #   - hosts:
+  #       - ec2-44-203-176-180.compute-1.amazonaws.com
+  #     secretName: hubble-ui-tls
