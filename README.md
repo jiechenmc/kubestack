@@ -1,15 +1,17 @@
-# Homelab Stuff 
+# Homelab Stuff
 
 A mix of Docker and Kubernetes deployments for learning and breaking things.
 
 ## Nodes
 
 ### 1x Kamrui Mini PC
+
 - 6C/12T AMD Ryzen 5 5500U
 - 16GB DDR4 RAM
 - Rocky Linux 9.5
 
 ### 2x Dell Optiplex 7060
+
 - 6C/6T Intel Core i5 8500T
 - 32GB DDR4 RAM
 - Rocky Linux 9.5
@@ -28,9 +30,9 @@ In addition to the `k3s` and `kind` clusters, I use `Docker` compose since it is
 ## Applications
 
 - Pi-hole
-    - Pi-hole is a DNS and DHCP server. I use the `DNS` server to block social media when I have to study, and the `DHCP` server to assign IP to my virtual machines and `JetKVM`.
+  - Pi-hole is a DNS and DHCP server. I use the `DNS` server to block social media when I have to study, and the `DHCP` server to assign IP to my virtual machines and `JetKVM`.
 - Grafana Observability Stack
-    - Grafana, Prometheus, Loki, Alloy
+  - Grafana, Prometheus, Loki, Alloy
 - Open Telemetry
-    - Looking to make some apps implementing OTEL using Go and Python 
+  - Looking to make some apps implementing OTEL using Go and Python
 - Jenkins

@@ -288,39 +288,6 @@
           - "Expected count: {{ groups[server_group] | length }}"
           - "Actual count: {{ k3s_nodes.stdout.split() | length }}"
 
-    - name: Deploy Cilium CNI with Helm
-      delegate_to: 127.0.0.1
-      become: false
-      block:
-        - name: Ensure Cilium Helm repo is present
-          kubernetes.core.helm_repository:
-            name: cilium
-            repo_url: "https://helm.cilium.io/"
-            force: true
-
-        - name: Update Helm repos
-          ansible.builtin.command:
-            cmd: helm repo update
-          register: k3s_helm_update
-          changed_when: "'Update Complete.' in k3s_helm_update.stdout"
-
-        - name: Deploy or upgrade Cilium
-          kubernetes.core.helm:
-            name: cilium
-            chart_ref: cilium/cilium
-            release_namespace: kube-system
-            create_namespace: false
-            values:
-              k8sServiceHost: "{{ api_endpoint }}"
-              k8sServicePort: 6443
-              kubeProxyReplacement: true
-              ipam:
-                operator:
-                  clusterPoolIPv4PodCIDRList:
-                    - "10.42.0.0/16"
-              hubble:
-                enabled: true
-                relay:
-                  enabled: true
-                ui:
-                  enabled: true
+    - name: Install Cillium
+      ansible.builtin.include_role:
+        name: cilium
