@@ -288,6 +288,6 @@
           - "Expected count: {{ groups[server_group] | length }}"
           - "Actual count: {{ k3s_nodes.stdout.split() | length }}"
 
-    - name: Install Cillium
-      ansible.builtin.include_role:
-        name: cilium
+- name: Install Cillium
+  ansible.builtin.include_role:
+    name: cilium
