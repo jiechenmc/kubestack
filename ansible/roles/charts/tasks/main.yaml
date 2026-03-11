@@ -14,25 +14,7 @@
         chart_ref: traefik/traefik
         release_namespace: traefik
         create_namespace: true
-        values:
-          deployment:
-            replicas: 1
-
-          ports:
-            web:
-              port: 80
-            websecure:
-              port: 443
-
-          service:
-            type: LoadBalancer
-
-          ingressRoute:
-            dashboard:
-              enabled: true
-
-          additionalArguments:
-            - "--api.dashboard=true"
+        values_files: "{{ playbook_dir }}/values.yaml"
 
 - name: Deploy MetalLB with Helm
   delegate_to: localhost
@@ -77,3 +59,36 @@
           metadata:
             name: l2
             namespace: metallb-system
+
+- name: Ensure Prometheus community repo is present
+  delegate_to: localhost
+  become: false
+  kubernetes.core.helm_repository:
+    name: prometheus-community
+    repo_url: https://prometheus-community.github.io/helm-charts
+
+- name: Ensure Grafana repo is present
+  delegate_to: localhost
+  become: false
+  kubernetes.core.helm_repository:
+    name: grafana
+    repo_url: https://grafana.github.io/helm-charts
+
+- name: Deploy Prometheus
+  delegate_to: localhost
+  become: false
+  kubernetes.core.helm:
+    name: prometheus
+    chart_ref: prometheus-community/prometheus
+    release_namespace: monitoring
+    create_namespace: true
+
+- name: Deploy Grafana
+  delegate_to: localhost
+  become: false
+  kubernetes.core.helm:
+    name: grafana
+    chart_ref: grafana/grafana
+    release_namespace: monitoring
+    values:
+      replicas: 2
