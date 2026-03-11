@@ -38,9 +38,3 @@
     group: "{{ ansible_user }}"
     mode: "0644"
   become: false
-
-- name: Install Helm
-  community.general.homebrew:
-    name: helm
-    state: present
-  become: false
