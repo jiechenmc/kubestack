@@ -7,7 +7,7 @@
   ignore_errors: true
 
 - name: Allow Kubernetes API port 6443 through firewalld
-  ansible.builtin.firewalld:
+  ansible.posix.firewalld:
     port: 6443/tcp
     permanent: true
     state: enabled
