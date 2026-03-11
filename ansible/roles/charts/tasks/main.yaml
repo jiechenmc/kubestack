@@ -17,7 +17,6 @@
         values:
           deployment:
             replicas: 1
-            hostNetwork: true
 
           ports:
             web:

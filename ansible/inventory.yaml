@@ -7,7 +7,7 @@ k3s_cluster:
       hosts:
         localhost:
           ansible_connection: local
-          ansible_python_interpreter: "{{ playbook_dir }}/.ansible/bin/python"
+          ansible_python_interpreter: "/home/chenj7728/.ansible/bin/python"
     agent:
       hosts: {}
 

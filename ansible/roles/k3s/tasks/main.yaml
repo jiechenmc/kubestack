@@ -295,7 +295,6 @@
           - "Nodes joined: {{ k3s_nodes.stdout.split() }}"
           - "Expected count: {{ groups[server_group] | length }}"
           - "Actual count: {{ k3s_nodes.stdout.split() | length }}"
-
-- name: Install Helm Charts
-  ansible.builtin.include_role:
-    name: charts
+# - name: Install Helm Charts
+#   ansible.builtin.include_role:
+#     name: charts
