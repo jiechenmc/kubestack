@@ -36,3 +36,14 @@ In addition to the `k3s` and `kind` clusters, I use `Docker` compose since it is
 - Open Telemetry
   - Looking to make some apps implementing OTEL using Go and Python
 - Jenkins
+
+## Running the Playbook
+
+### Preqs
+
+1. sudo dnf -y install ansible-core
+2. ansible-galaxy collection install community.general
+
+```
+ansible-playbook -i ansible/inventory/pve/inventory.yaml ansible/site.yaml
+```
