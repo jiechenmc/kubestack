@@ -3,6 +3,11 @@ k3s_cluster:
     server:
       hosts:
         10.144.138.247:
+    local:
+      hosts:
+        localhost:
+          ansible_connection: local
+          ansible_python_interpreter: "{{ playbook_dir }}/.ansible/bin/python"
     agent:
       hosts: {}
 
@@ -14,7 +19,7 @@ k3s_cluster:
 
     # Optional vars
     extra_server_args: |
-      --tls-san {{ api_endpoint }} --flannel-backend none --disable-network-policy --disable-helm-controller --disable=servicelb --write-kubeconfig-mode 644
+      --tls-san {{ api_endpoint }} --disable-network-policy --disable-helm-controller --disable=servicelb --write-kubeconfig-mode 644
 
     # extra_agent_args: ""
     # cluster_context: k3s-ansible
