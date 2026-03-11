@@ -6,6 +6,14 @@
   changed_when: false
   ignore_errors: true
 
+- name: Allow Kubernetes API port 6443 through firewalld
+  ansible.builtin.firewalld:
+    port: 6443/tcp
+    permanent: true
+    state: enabled
+    immediate: true
+  become: true
+
 - name: Download artifact only if needed
   when:
     - not ansible_check_mode

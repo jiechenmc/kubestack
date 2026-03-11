@@ -45,5 +45,5 @@ In addition to the `k3s` and `kind` clusters, I use `Docker` compose since it is
 2. ansible-galaxy collection install community.general
 
 ```
-ansible-playbook -i ansible/inventory/pve/inventory.yaml ansible/site.yaml
+ansible-playbook -i ansible/inventory.yaml ansible/site.yaml
 ```

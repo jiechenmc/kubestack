@@ -2,3 +2,45 @@
   ansible.builtin.dnf:
     name: "@Development Tools"
     state: present
+
+- name: Install Zsh if not already installed
+  ansible.builtin.dnf:
+    name: zsh
+    state: present
+
+- name: Install Oh My Zsh
+  ansible.builtin.shell: |
+    set -o pipefail
+    yes | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  args:
+    creates: /home/{{ ansible_user }}/.oh-my-zsh
+  become: false
+
+- name: Change default shell to Zsh
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    shell: /usr/bin/zsh
+  become: true
+
+- name: Install Homebrew using the official script
+  ansible.builtin.shell: |
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  args:
+    creates: /home/linuxbrew/.linuxbrew/bin/brew
+  become: false
+
+- name: Add Homebrew to the PATH for the current user
+  ansible.builtin.lineinfile:
+    path: /home/{{ ansible_user }}/.zshrc
+    line: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
+    create: true
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  become: false
+
+- name: Install Helm
+  community.general.homebrew:
+    name: helm
+    state: present
+  become: false

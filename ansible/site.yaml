@@ -6,7 +6,4 @@
   remote_user: rocky
   roles:
     - devtools
-    - ohmyzsh
-    - homebrew
-    - helm
     - k3s
