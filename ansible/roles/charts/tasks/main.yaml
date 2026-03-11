@@ -12,8 +12,7 @@
       kubernetes.core.helm:
         name: traefik
         chart_ref: traefik/traefik
-        release_namespace: traefik
-        create_namespace: true
+        release_namespace: kube-system
         values_files: "{{ playbook_dir }}/values.yaml"
 
 - name: Deploy MetalLB with Helm
@@ -91,4 +90,4 @@
     chart_ref: grafana/grafana
     release_namespace: monitoring
     values:
-      replicas: 2
+      replicas: 1

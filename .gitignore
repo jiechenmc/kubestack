@@ -1,2 +1,4 @@
 .ansible/
 .venv/
+*.crt
+*.key

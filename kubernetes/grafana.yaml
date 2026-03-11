@@ -10,6 +10,10 @@ spec:
   hostnames:
     - grafana.k8s
   rules:
-    - backendRefs:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
         - name: grafana
           port: 80
