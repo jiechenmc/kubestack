@@ -6,7 +6,7 @@ metadata:
 spec:
   parentRefs:
     - name: traefik-gateway
-      namespace: traefik
+      namespace: kube-system
   hostnames:
     - grafana.k8s
   rules:

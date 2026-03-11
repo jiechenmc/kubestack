@@ -91,3 +91,5 @@
     release_namespace: monitoring
     values:
       replicas: 1
+      adminUser: admin
+      adminPassword: admin
