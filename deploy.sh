@@ -6,3 +6,4 @@ kubectl create secret tls local-selfsigned-tls \
   -n kube-system
 
 k apply -f kubernetes/ -R
+k patch svc kube-dns -n kube-system -p '{"spec": {"type": "LoadBalancer"}}' # .128
