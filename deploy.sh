@@ -4,3 +4,5 @@ kubectl create secret tls local-selfsigned-tls \
   --cert=./tls.crt \
   --key=./tls.key \
   -n kube-system
+
+k apply -f kubernetes/ -R
