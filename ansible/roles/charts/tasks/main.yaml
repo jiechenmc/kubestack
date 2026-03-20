@@ -93,6 +93,8 @@
       replicas: 1
       adminUser: admin
       adminPassword: admin
+      persistence:
+        enabled: true
 
 - name: Ensure Bitnami repo is present
   delegate_to: localhost

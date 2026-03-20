@@ -3,6 +3,8 @@ k3s_cluster:
     server:
       hosts:
         10.144.138.247:
+        10.144.138.246:
+        10.144.138.249:
     local:
       hosts:
         localhost:
