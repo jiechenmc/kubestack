@@ -8,13 +8,27 @@
 
 - name: Set unique hostname
   ansible.builtin.hostname:
-    name: "{{ inventory_hostname }}"
+    name: "k3s-node-{{ ansible_facts['default_ipv4']['address'] | replace('.', '-') }}"
 
 - name: Disable firewalld
   ansible.builtin.systemd:
     name: firewalld
     state: stopped
     enabled: false
+
+- name: Install open-iscsi for Longhorn
+  ansible.builtin.dnf:
+    name:
+      - iscsi-initiator-utils
+      - nfs-utils
+    state: present
+    update_cache: true
+
+- name: Enable and start iscsid
+  ansible.builtin.systemd:
+    name: iscsid
+    state: started
+    enabled: true
 
 - name: Download artifact only if needed
   when:
@@ -297,3 +311,55 @@
           - "Nodes joined: {{ k3s_nodes.stdout.split() }}"
           - "Expected count: {{ groups[server_group] | length }}"
           - "Actual count: {{ k3s_nodes.stdout.split() | length }}"
+
+- name: Install Calico via Tigera operator
+  delegate_to: localhost
+  run_once: true
+  block:
+    - name: Add Tigera operator Helm repo
+      kubernetes.core.helm_repository:
+        name: projectcalico
+        repo_url: https://docs.tigera.io/calico/charts
+        binary_path: "{{ helm_binary }}"
+
+    - name: Install Tigera operator
+      kubernetes.core.helm:
+        name: tigera-operator
+        chart_ref: projectcalico/tigera-operator
+        chart_version: v3.31.4
+        release_namespace: tigera-operator
+        create_namespace: true
+        binary_path: "{{ helm_binary }}"
+        kubeconfig: "{{ kubeconfig }}"
+        values:
+          installation:
+            enabled: true
+            kubernetesProvider: ""
+            imagePullSecrets: []
+            calicoNetwork:
+              bgp: Enabled
+              ipPools:
+                - blockSize: 26
+                  cidr: 10.43.0.0/16
+                  encapsulation: None
+                  natOutgoing: Enabled
+                  nodeSelector: all()
+
+- name: Install MetalLB
+  delegate_to: localhost
+  run_once: true
+  block:
+    - name: Add MetalLB Helm repo
+      kubernetes.core.helm_repository:
+        name: metallb
+        repo_url: https://metallb.github.io/metallb
+        binary_path: "{{ helm_binary }}"
+
+    - name: Install MetalLB
+      kubernetes.core.helm:
+        name: metallb
+        chart_ref: metallb/metallb
+        release_namespace: metallb-system
+        create_namespace: true
+        binary_path: "{{ helm_binary }}"
+        kubeconfig: "{{ kubeconfig }}"
