@@ -16,11 +16,11 @@ installation:
   imagePullSecrets: []
 
   calicoNetwork:
-    bgp: Disabled
+    bgp: Enabled
     ipPools:
       - blockSize: 26
         cidr: 10.43.0.0/16
-        encapsulation: IPIP
+        encapsulation: None
         natOutgoing: Enabled
         nodeSelector: all()
 

@@ -31,6 +31,13 @@
     state: enabled
     immediate: true
 
+- name: Allow BGP
+  ansible.posix.firewalld:
+    port: 179/tcp
+    permanent: true
+    state: enabled
+    immediate: true
+
 - name: Download artifact only if needed
   when:
     - not ansible_check_mode
@@ -312,22 +319,3 @@
           - "Nodes joined: {{ k3s_nodes.stdout.split() }}"
           - "Expected count: {{ groups[server_group] | length }}"
           - "Actual count: {{ k3s_nodes.stdout.split() | length }}"
-
-- name: Add cni0 interface to trusted zone
-  ansible.posix.firewalld:
-    interface: cni0
-    zone: trusted
-    permanent: true
-    state: enabled
-
-- name: Add flannel.1 interface to trusted zone
-  ansible.posix.firewalld:
-    interface: flannel.1
-    zone: trusted
-    permanent: true
-    state: enabled
-
-- name: Reload firewalld
-  ansible.builtin.service:
-    name: firewalld
-    state: reloaded

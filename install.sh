@@ -18,5 +18,7 @@ echo "── Running Ansible playbook ──────────────
 ansible-playbook -i "$INVENTORY" "$PLAYBOOK"
 
 python3 kubestack.py generate
-kubectl wait --for=condition=established --timeout=120s crd --all
+
+sleep 5
+
 kubectl apply --server-side -f kubernetes -R --force-conflicts
