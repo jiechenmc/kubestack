@@ -260,12 +260,7 @@ provider: # @schema type: [object, string]
     # -- [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container.
     env: []
     # -- Extra arguments to provide for the `webhook` container.
-    args:
-      [
-        "--pihole-api-version=6",
-        "--pihole-server=http://10.144.138.247",
-        "--pihole-password=admin",
-      ]
+    args: []
     # -- Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container.
     extraVolumeMounts: []
     # -- [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container.
@@ -311,7 +306,11 @@ provider: # @schema type: [object, string]
 
 # -- Extra arguments to provide to _ExternalDNS_.
 # An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
-extraArgs: {} # @schema type: [array, null, object]; item: string; uniqueItems: true
+extraArgs:
+  - "--pihole-api-version=6"
+  - "--pihole-server=http://10.144.138.247"
+  - "--pihole-password=admin"
+# @schema type: [array, null, object]; item: string; uniqueItems: true
 
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
