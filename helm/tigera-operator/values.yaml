@@ -6,7 +6,7 @@
 imagePullSecrets: {}
 
 installation:
-  enabled: true
+  enabled: false
   kubernetesProvider: ""
   # imagePullSecrets are configured on all images deployed by the tigera-operator.
   # secrets specified here must exist in the tigera-operator namespace; they won't be created by the operator or helm.
