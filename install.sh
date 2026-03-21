@@ -16,3 +16,7 @@ MANIFESTS="kubernetes/generated"
 # ── Run Ansible playbook ────────────────────────────────────────
 echo "── Running Ansible playbook ───────────────────────────────"
 ansible-playbook -i "$INVENTORY" "$PLAYBOOK"
+
+python3 kubestack.py generate
+kubectl wait --for=condition=established --timeout=120s crd --all
+k apply --server-side -f kubernetes -R --force-conflicts
