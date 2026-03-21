@@ -1,17 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: grafana
+  name: pgadmin4.local
 spec:
   ingressClassName: traefik
   rules:
-    - host: grafana.local
+    - host: pgadmin.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: grafana
+                name: pgadmin4
                 port:
                   number: 80
