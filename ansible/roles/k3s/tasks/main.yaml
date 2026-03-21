@@ -6,9 +6,27 @@
   changed_when: false
   ignore_errors: true
 
+- name: Set unique hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
 - name: Allow Kubernetes API port 6443 through firewalld
   ansible.posix.firewalld:
     port: 6443/tcp
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Allow etcd client port
+  ansible.posix.firewalld:
+    port: 2379/tcp
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Allow etcd peer port
+  ansible.posix.firewalld:
+    port: 2380/tcp
     permanent: true
     state: enabled
     immediate: true
