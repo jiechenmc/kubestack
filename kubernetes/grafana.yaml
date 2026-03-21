@@ -2,11 +2,11 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: grafana
-  namespace: monitoring
+  namespace: default
 spec:
   parentRefs:
     - name: traefik-gateway
-      namespace: kube-system
+      namespace: default
   hostnames:
     - grafana.k8s
   rules:
