@@ -1,17 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: clickstack
+  name: alloy
 spec:
   ingressClassName: traefik
   rules:
-    - host: clickstack.local
+    - host: alloy.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: clickstack-app
+                name: alloy-cluster
                 port:
-                  number: 3000
+                  number: 12345
