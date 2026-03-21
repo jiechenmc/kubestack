@@ -19,4 +19,4 @@ ansible-playbook -i "$INVENTORY" "$PLAYBOOK"
 
 python3 kubestack.py generate
 kubectl wait --for=condition=established --timeout=120s crd --all
-k apply --server-side -f kubernetes -R --force-conflicts
+kubectl apply --server-side -f kubernetes -R --force-conflicts
