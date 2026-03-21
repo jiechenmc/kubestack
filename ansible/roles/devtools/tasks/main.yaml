@@ -9,9 +9,8 @@
     state: present
 
 - name: Install Oh My Zsh
-  ansible.builtin.shell: |
-    set -o pipefail
-    yes | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  ansible.builtin.shell: >
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
   args:
     creates: /home/{{ ansible_user }}/.oh-my-zsh
   become: false
@@ -20,13 +19,14 @@
   ansible.builtin.user:
     name: "{{ ansible_user }}"
     shell: /usr/bin/zsh
-  become: true
 
 - name: Install Homebrew using the official script
   ansible.builtin.shell: |
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   args:
     creates: /home/linuxbrew/.linuxbrew/bin/brew
+  environment:
+    NONINTERACTIVE: "1"
   become: false
 
 - name: Add Homebrew to the PATH for the current user

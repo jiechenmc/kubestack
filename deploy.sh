@@ -1,9 +1,18 @@
-source ~/.ansible/bin/activate
-ansible-playbook -i ansible/inventory.yaml ansible/site.yaml
-kubectl create secret tls local-selfsigned-tls \
-  --cert=./tls.crt \
-  --key=./tls.key \
-  -n kube-system
+#!/usr/bin/env bash
+set -euo pipefail
 
-k apply -f kubernetes/ -R
-k patch svc kube-dns -n kube-system -p '{"spec": {"type": "LoadBalancer"}}' # .128
+INVENTORY="ansible/inventory.yaml"
+PLAYBOOK="ansible/site.yaml"
+TLS_CERT="./tls.crt"
+TLS_KEY="./tls.key"
+TLS_SECRET="local-selfsigned-tls"
+TLS_NS="kube-system"
+CHARTS_DIR="charts"
+MANIFESTS="kubernetes/generated"
+
+# ── Activate ansible venv ───────────────────────────────────────
+. ~/.ansible/bin/activate
+
+# ── Run Ansible playbook ────────────────────────────────────────
+echo "── Running Ansible playbook ───────────────────────────────"
+ansible-playbook -i "$INVENTORY" "$PLAYBOOK"

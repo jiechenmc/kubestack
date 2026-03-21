@@ -12,7 +12,6 @@
     permanent: true
     state: enabled
     immediate: true
-  become: true
 
 - name: Download artifact only if needed
   when:
@@ -314,7 +313,3 @@
   ansible.builtin.service:
     name: firewalld
     state: reloaded
-
-- name: Install Helm Charts
-  ansible.builtin.include_role:
-    name: charts
