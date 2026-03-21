@@ -1,17 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: foo
+  name: traefik.nx
 spec:
   ingressClassName: traefik
   rules:
-    - host: foo.bar.com
+    - host: longhorn.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: grafana
+                name: longhorn-frontend
                 port:
                   number: 80
