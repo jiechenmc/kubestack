@@ -18,6 +18,7 @@ spec:
       containers:
         - name: lockin
           image: ghcr.io/jiechenmc/lockin:main
+          imagePullPolicy: Always
           ports:
             - containerPort: 1323
           env:
