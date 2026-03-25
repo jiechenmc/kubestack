@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lockin
+  namespace: default
+  labels:
+    app: lockin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lockin
+  template:
+    metadata:
+      labels:
+        app: lockin
+    spec:
+      containers:
+        - name: lockin
+          image: ghcr.io/jiechenmc/lockin:main
+          ports:
+            - containerPort: 1323
+          env:
+            - name: DB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: lockin-secrets
+                  key: DB_URI
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lockin
+  namespace: default
+spec:
+  selector:
+    app: lockin
+  ports:
+    - port: 1323
+      targetPort: 1323
+  type: ClusterIP

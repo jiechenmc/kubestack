@@ -382,28 +382,3 @@
         create_namespace: true
         binary_path: "{{ helm_binary }}"
         kubeconfig: "{{ kubeconfig }}"
-
-- name: Apply default LimitRange to default namespace
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: LimitRange
-      metadata:
-        name: default-limits
-        namespace: default
-      spec:
-        limits:
-          - type: Container
-            default:
-              cpu: 500m
-              memory: 256Mi
-            defaultRequest:
-              cpu: 100m
-              memory: 128Mi
-            max:
-              cpu: "2"
-              memory: 1Gi
-            min:
-              cpu: 50m
-              memory: 64Mi
