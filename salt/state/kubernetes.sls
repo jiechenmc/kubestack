@@ -1,3 +1,5 @@
+{% set home = salt['environ.get']('HOME') %}
+
 disable_swap:
   cmd.run:
     - name: swapoff -a
@@ -16,10 +18,10 @@ kubernetes_repo:
     - contents: |
         [kubernetes]
         name=Kubernetes
-        baseurl=https://pkgs.k8s.io/core:/stable:/v1.36/rpm/
+        baseurl=https://pkgs.k8s.io/core:/stable:/{{ pillar['k8s_version'] }}/rpm/
         enabled=1
         gpgcheck=1
-        gpgkey=https://pkgs.k8s.io/core:/stable:/v1.36/rpm/repodata/repomd.xml.key
+        gpgkey=https://pkgs.k8s.io/core:/stable:/{{ pillar['k8s_version'] }}/rpm/repodata/repomd.xml.key
         exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
     - mode: "0644"
     - user: root
@@ -77,3 +79,39 @@ kubeconfig_env:
   file.append:
     - name: /etc/profile.d/kubernetes.sh
     - text: 'export KUBECONFIG=/etc/kubernetes/admin.conf'
+
+add_autocomplete_to_zshrc:
+  file.append:
+    - name: {{ home }}/.zshrc
+    - text: "source <(kubectl completion zsh)"
+
+kubeadm_init:
+  cmd.run:
+    - name: kubeadm init --skip-phases=addon/kube-proxy --apiserver-advertise-address={{ pillar['k8s_api_ip'] }}
+    - unless: kubectl cluster-info --request-timeout=5s
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+
+add_cilium_repo:
+  cmd.run:
+    - name: helm repo add cilium https://helm.cilium.io/ && helm repo update
+    - unless: helm repo list | grep cilium
+
+install_cilium:
+  cmd.run:
+    - name: |
+        helm upgrade --install cilium cilium/cilium \
+          --version {{ pillar['cilium_version'] }} \
+          --namespace kube-system \
+          --set kubeProxyReplacement=true \
+          --set k8sServiceHost={{ pillar['k8s_api_ip'] }} \
+          --set k8sServicePort={{ pillar['k8s_svc_port'] }} \
+          --set operator.replicas=1 \
+          --set ipam.mode=cluster-pool \
+          --set ipam.operator.clusterPoolIPv4PodCIDRList={{ pillar['pod_cidr'] }} \
+          --set ipam.operator.clusterPoolIPv4MaskSize=24
+    - unless: helm status cilium -n kube-system
+    - require:
+      - cmd: add_cilium_repo
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
