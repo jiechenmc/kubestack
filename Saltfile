@@ -1,0 +1,3 @@
+salt-call:
+  local: True
+  file_root: /root/kubestack/salt
