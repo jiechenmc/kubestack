@@ -1,3 +1,5 @@
 base:
   '*':
     - webserver
+    - git
+    - dev
