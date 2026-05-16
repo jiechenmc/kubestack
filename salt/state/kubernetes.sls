@@ -32,10 +32,10 @@ crio_repo:
     - contents: |
         [cri-o]
         name=CRI-O
-        baseurl=https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.36/rpm/
+        baseurl=https://download.opensuse.org/repositories/isv:/cri-o:/stable:/{{ pillar['crio_version'] }}/rpm/
         enabled=1
         gpgcheck=1
-        gpgkey=https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.36/rpm/repodata/repomd.xml.key
+        gpgkey=https://download.opensuse.org/repositories/isv:/cri-o:/stable:/{{ pillar['crio_version'] }}/rpm/repodata/repomd.xml.key
     - mode: "0644"
     - user: root
     - group: root
