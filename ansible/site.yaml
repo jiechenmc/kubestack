@@ -1,9 +1,0 @@
----
-- name: Configure Rocky Linux Workstation
-  hosts: server
-  become: true
-  become_method: ansible.builtin.sudo
-  remote_user: rocky
-  roles:
-    - devtools
-    - k3s
