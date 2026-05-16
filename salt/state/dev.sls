@@ -33,3 +33,8 @@ set_default_shell_zsh:
   user.present:
     - name: {{ user }}
     - shell: /usr/bin/zsh
+
+add_kubectl_alias:
+  file.append:
+    - name: {{ home }}/.zshrc
+    - text: "alias k=kubectl"
