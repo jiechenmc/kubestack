@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-python3 kubestack.py generate
+rm -rf kubernetes/generated
 
-sleep 5s
+python3 kubestack.py generate
 
 kubectl apply --server-side -f kubernetes -R --force-conflicts
