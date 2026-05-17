@@ -248,7 +248,7 @@ managedRecordTypes: [] # @schema type: [array, null]; item: string; uniqueItems:
 
 provider: # @schema type: [object, string]
   # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).
-  name: pihole
+  name: cloudflare
   webhook:
     image:
       # -- (string) Image repository for the `webhook` container.
@@ -258,7 +258,13 @@ provider: # @schema type: [object, string]
       # -- Image pull policy for the `webhook` container.
       pullPolicy: IfNotPresent
     # -- [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container.
-    env: []
+# Environment variables for the webhook container
+      env:
+        - name: CF_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: tunnel-token
+              key: token
     # -- Extra arguments to provide for the `webhook` container.
     args: []
     # -- Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container.
@@ -306,10 +312,7 @@ provider: # @schema type: [object, string]
 
 # -- Extra arguments to provide to _ExternalDNS_.
 # An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
-extraArgs:
-  - "--pihole-api-version=6"
-  - "--pihole-server=http://10.144.138.247"
-  - "--pihole-password=admin"
+extraArgs: []
 # @schema type: [array, null, object]; item: string; uniqueItems: true
 
 secretConfiguration:
