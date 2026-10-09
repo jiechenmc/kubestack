@@ -109,10 +109,36 @@ add_autocomplete_to_zshrc:
     - name: {{ home }}/.zshrc
     - text: "source <(kubectl completion zsh)"
 
+static_ip:
+  cmd.run:
+    - name: |
+        nmcli con mod {{ pillar['k8s_api_iface'] }} \
+          ipv4.method manual \
+          ipv4.addresses {{ pillar['k8s_api_ip'] }}/{{ pillar['k8s_api_prefix'] }} \
+          ipv4.gateway {{ pillar['k8s_api_gateway'] }} \
+          ipv4.dns "{{ pillar['k8s_api_dns'] }}" \
+          connection.autoconnect yes
+        nmcli dev reapply {{ pillar['k8s_api_iface'] }}
+    - unless: >-
+        test "$(nmcli -g ipv4.method,ipv4.addresses con show {{ pillar['k8s_api_iface'] }} | paste -sd,)"
+        = "manual,{{ pillar['k8s_api_ip'] }}/{{ pillar['k8s_api_prefix'] }}"
+
+kubeadm_reset:
+  cmd.run:
+    - name: |
+        kubeadm reset -f --cri-socket=unix:///var/run/crio/crio.sock
+        rm -rf /etc/cni/net.d/* /var/lib/cni /var/run/cilium
+        ip link delete cilium_host 2>/dev/null || true
+        ip link delete cilium_vxlan 2>/dev/null || true
+    - require:
+      - service: crio_service
+      - cmd: static_ip
+
 kubeadm_init:
   cmd.run:
-    - name: kubeadm init --skip-phases=addon/kube-proxy --apiserver-advertise-address={{ pillar['k8s_api_ip'] }} --service-cidr={{ pillar['service_cidr'] }}
-    - unless: kubectl cluster-info --request-timeout=5s
+    - name: kubeadm init --cri-socket=unix:///var/run/crio/crio.sock --skip-phases=addon/kube-proxy --apiserver-advertise-address={{ pillar['k8s_api_ip'] }} --service-cidr={{ pillar['service_cidr'] }}
+    - require:
+      - cmd: kubeadm_reset
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 

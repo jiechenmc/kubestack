@@ -1,4 +1,6 @@
 salt-call:
   local: True
-  file_root: /root/kubestack/salt/state
-  pillar_root: /root/kubestack/salt/pillar
+  file_root:
+    - /root/kubestack/salt/state
+  pillar_root:
+    - /root/kubestack/salt/pillar
