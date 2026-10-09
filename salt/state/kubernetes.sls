@@ -277,6 +277,7 @@ rook_ceph_cluster:
                 enabled: true
           dashboard:
             enabled: true
+            prometheusEndpoint: http://prometheus-server.default.svc # dashboard graphs query this
           crashCollector:
             disable: true
           annotations:
