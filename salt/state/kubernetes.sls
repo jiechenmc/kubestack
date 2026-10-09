@@ -83,12 +83,22 @@ firewall_service_cidr:
     - name: firewall-cmd --permanent --zone=trusted --add-source={{ pillar['service_cidr'] }}
     - unless: firewall-cmd --zone=trusted --list-sources | grep {{ pillar['service_cidr'] }}
 
+firewall_lan_to_pods:
+  cmd.run:
+    - name: |
+        firewall-cmd --permanent --new-policy lan-to-pods
+        firewall-cmd --permanent --policy lan-to-pods --add-ingress-zone public
+        firewall-cmd --permanent --policy lan-to-pods --add-egress-zone ANY
+        firewall-cmd --permanent --policy lan-to-pods --add-rich-rule 'rule family="ipv4" destination address="{{ pillar['pod_cidr'] }}" accept'
+    - unless: firewall-cmd --permanent --info-policy lan-to-pods
+
 firewall_reload:
   cmd.run:
     - name: firewall-cmd --reload
     - onchanges:
       - cmd: firewall_pod_cidr
       - cmd: firewall_service_cidr
+      - cmd: firewall_lan_to_pods
 
 enable_br_netfilter:
   kmod.present:
@@ -162,9 +172,73 @@ install_cilium:
           --set ipam.operator.clusterPoolIPv4MaskSize=24 \
           --set hubble.relay.enabled=true \
           --set hubble.ui.enabled=true \
-          --set socketLB.hostNamespaceOnly=false
-    - unless: helm status cilium -n kube-system
+          --set hubble.ui.service.type=LoadBalancer \
+          --set socketLB.hostNamespaceOnly=false \
+          --set l2announcements.enabled=true \
+          --set externalIPs.enabled=true \
+          --set k8sClientRateLimit.qps=20 \
+          --set k8sClientRateLimit.burst=40 \
+          --set rollOutCiliumPods=true \
+          --set operator.rollOutPods=true \
+          --set hostFirewall.enabled=true \
+          --set policyAuditMode=true \
+          --set prometheus.enabled=true \
+          --set operator.prometheus.enabled=true \
+          --set hubble.metrics.enableOpenMetrics=true \
+          --set-json 'hubble.metrics.enabled={{ pillar['hubble_metrics'] | tojson }}' \
+          --set dashboards.enabled=true \
+          --set hubble.metrics.dashboards.enabled=true \
+          --set operator.dashboards.enabled=true
     - require:
       - cmd: add_cilium_repo
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+cilium_l2_announcements:
+  cmd.run:
+    - name: |
+        kubectl apply -f - <<'MANIFEST'
+        apiVersion: cilium.io/v2
+        kind: CiliumLoadBalancerIPPool
+        metadata:
+          name: lan
+        spec:
+          blocks:
+            - start: {{ pillar['lb_ip_start'] }}
+              stop: {{ pillar['lb_ip_stop'] }}
+        ---
+        apiVersion: cilium.io/v2alpha1
+        kind: CiliumL2AnnouncementPolicy
+        metadata:
+          name: lan
+        spec:
+          interfaces:
+            - ^{{ pillar['k8s_api_iface'] }}$
+          loadBalancerIPs: true
+          externalIPs: true
+        MANIFEST
+    - require:
+      - cmd: install_cilium
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+
+cilium_host_policy:
+  cmd.run:
+    - name: |
+        kubectl apply -f - <<'MANIFEST'
+        apiVersion: cilium.io/v2
+        kind: CiliumClusterwideNetworkPolicy
+        metadata:
+          name: host-ssh
+        spec:
+          nodeSelector: {}
+          ingress:
+            - fromEntities: [world, cluster]
+              toPorts:
+                - ports:
+                    - port: "22"
+                      protocol: TCP
+        MANIFEST
+    - require:
+      - cmd: install_cilium
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf

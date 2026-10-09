@@ -233,7 +233,7 @@ gossipPortName: gossip
 ##
 service:
   enabled: true
-  type: ClusterIP
+  type: LoadBalancer
   # Set the ip family policy to configure dual-stack see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services)
   ipFamilyPolicy: ""
   # Sets the families that should be supported and the order in which they should be applied to ClusterIP as well. Can be IPv4 and/or IPv6.
@@ -670,7 +670,16 @@ plugins: []
 ## Configure grafana datasources
 ## ref: http://docs.grafana.org/administration/provisioning/#datasources
 ##
-datasources: {}
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        url: http://prometheus-server.default.svc
+        access: proxy
+        isDefault: true
 #  datasources.yaml:
 #    apiVersion: 1
 #    datasources:
@@ -1084,7 +1093,7 @@ sidecar:
     # Sets the size limit of the alert sidecar emptyDir volume
     sizeLimit: ""
   dashboards:
-    enabled: false
+    enabled: true
     # Additional environment variables for the dashboards sidecar
     env: {}
     ## "valueFrom" environment variable references that will be added to deployment pods. Name is templated.
@@ -1116,7 +1125,7 @@ sidecar:
     # Namespaces list. If specified, the sidecar will search for config-maps/secrets inside these namespaces.
     # Otherwise the namespace in which the sidecar is running will be used.
     # It's also possible to specify ALL to search in all namespaces.
-    searchNamespace: null
+    searchNamespace: ALL
     # Method to use to detect ConfigMap changes. With WATCH the sidecar will do a WATCH requests, with SLEEP it will list all ConfigMaps, then sleep for 60 seconds.
     watchMethod: WATCH
     # search in configmap, secret or both

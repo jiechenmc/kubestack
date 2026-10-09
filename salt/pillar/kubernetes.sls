@@ -9,3 +9,13 @@ k8s_api_iface: enp4s0
 k8s_api_prefix: 24
 k8s_api_gateway: 10.144.138.1
 k8s_api_dns: "10.144.138.1"
+lb_ip_start: 10.144.138.200
+lb_ip_stop: 10.144.138.220
+hubble_metrics:
+  - dns
+  - drop
+  - tcp
+  - icmp
+  - flow:sourceContext=reserved-identity;destinationContext=reserved-identity
+  - port-distribution:destinationContext=reserved-identity
+  - policy:sourceContext=reserved-identity;destinationContext=reserved-identity
