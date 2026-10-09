@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-HELM_DIR = Path("helm")
+HELM_DIR = Path("kubernetes/helm")
 GENERATED_DIR = Path("kubernetes/generated")
 
 

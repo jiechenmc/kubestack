@@ -815,7 +815,18 @@ notifiers: {}
 ##
 ## `path` must be /var/lib/grafana/dashboards/<provider_name>
 ##
-dashboardProviders: {}
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: default
+        orgId: 1
+        folder: Nodes
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
 #  dashboardproviders.yaml:
 #    apiVersion: 1
 #    providers:
@@ -846,7 +857,12 @@ defaultCurlOptions: "-skf"
 ##
 ## dashboards per provider, use provider name as key.
 ##
-dashboards: {}
+dashboards:
+  default:
+    node-exporter-full:
+      gnetId: 1860
+      revision: 45
+      datasource: Prometheus
   # default:
   #   some-dashboard:
   #     json: |

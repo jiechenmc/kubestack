@@ -5,4 +5,11 @@ rm -rf kubernetes/generated
 
 python3 kubestack.py generate
 
-kubectl apply --server-side -f kubernetes -R --force-conflicts
+# apply everything under kubernetes/ except the raw helm charts (rendered into kubernetes/generated)
+args=()
+for entry in kubernetes/*; do
+  [[ "$entry" == kubernetes/helm ]] && continue
+  args+=(-f "$entry")
+done
+
+kubectl apply --server-side -R --force-conflicts "${args[@]}"
