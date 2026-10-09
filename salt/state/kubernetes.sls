@@ -1,4 +1,6 @@
 {% set home = salt['environ.get']('HOME') %}
+{# true when a cluster already exists for the current k8s_api_ip #}
+{% set cluster_matches_ip = "grep -qs 'server: https://" ~ pillar['k8s_api_ip'] ~ ":" ~ pillar['k8s_svc_port'] ~ "$' /etc/kubernetes/admin.conf" %}
 
 disable_swap:
   cmd.run:
@@ -140,6 +142,7 @@ kubeadm_reset:
         rm -rf /etc/cni/net.d/* /var/lib/cni /var/run/cilium
         ip link delete cilium_host 2>/dev/null || true
         ip link delete cilium_vxlan 2>/dev/null || true
+    - unless: {{ cluster_matches_ip | yaml_encode }}
     - require:
       - service: crio_service
       - cmd: static_ip
@@ -147,6 +150,7 @@ kubeadm_reset:
 kubeadm_init:
   cmd.run:
     - name: kubeadm init --cri-socket=unix:///var/run/crio/crio.sock --skip-phases=addon/kube-proxy --apiserver-advertise-address={{ pillar['k8s_api_ip'] }} --service-cidr={{ pillar['service_cidr'] }}
+    - unless: {{ cluster_matches_ip | yaml_encode }}
     - require:
       - cmd: kubeadm_reset
     - env:
@@ -180,8 +184,6 @@ install_cilium:
           --set k8sClientRateLimit.burst=40 \
           --set rollOutCiliumPods=true \
           --set operator.rollOutPods=true \
-          --set hostFirewall.enabled=true \
-          --set policyAuditMode=true \
           --set prometheus.enabled=true \
           --set operator.prometheus.enabled=true \
           --set hubble.metrics.enableOpenMetrics=true \
@@ -215,28 +217,6 @@ cilium_l2_announcements:
             - ^{{ pillar['k8s_api_iface'] }}$
           loadBalancerIPs: true
           externalIPs: true
-        MANIFEST
-    - require:
-      - cmd: install_cilium
-    - env:
-      - KUBECONFIG: /etc/kubernetes/admin.conf
-
-cilium_host_policy:
-  cmd.run:
-    - name: |
-        kubectl apply -f - <<'MANIFEST'
-        apiVersion: cilium.io/v2
-        kind: CiliumClusterwideNetworkPolicy
-        metadata:
-          name: host-ssh
-        spec:
-          nodeSelector: {}
-          ingress:
-            - fromEntities: [world, cluster]
-              toPorts:
-                - ports:
-                    - port: "22"
-                      protocol: TCP
         MANIFEST
     - require:
       - cmd: install_cilium
