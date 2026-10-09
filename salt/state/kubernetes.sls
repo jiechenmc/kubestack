@@ -234,6 +234,18 @@ rook_ceph_operator:
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 
+# rbd/cephfs Driver CRs for ceph-csi-operator, which runs the csi plugins
+ceph_csi_drivers:
+  cmd.run:
+    - name: |
+        helm upgrade --install ceph-csi-drivers {{ pillar['ceph_csi_drivers_chart'] }} \
+          --namespace rook-ceph \
+          --values {{ pillar['ceph_csi_drivers_chart'] }}/values-rook.yaml
+    - require:
+      - cmd: rook_ceph_operator
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+
 # single node: 1 mon, 1 mgr, 1 osd on ceph_device, pools with a single replica
 rook_ceph_cluster:
   cmd.run:
@@ -343,6 +355,55 @@ rook_ceph_cluster:
           csi.storage.k8s.io/fstype: xfs
         allowVolumeExpansion: true
         reclaimPolicy: Delete
+        ---
+        # s3-compatible object storage (rgw), single replica like the block pool
+        apiVersion: ceph.rook.io/v1
+        kind: CephObjectStore
+        metadata:
+          name: objectstore
+          namespace: rook-ceph
+        spec:
+          metadataPool:
+            failureDomain: osd
+            replicated:
+              size: 1
+              requireSafeReplicaSize: false
+          dataPool:
+            failureDomain: osd
+            replicated:
+              size: 1
+              requireSafeReplicaSize: false
+          preservePoolsOnDelete: false
+          gateway:
+            port: 80
+            instances: 1
+        ---
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: rook-ceph-bucket
+        provisioner: rook-ceph.ceph.rook.io/bucket
+        reclaimPolicy: Delete
+        parameters:
+          objectStoreName: objectstore
+          objectStoreNamespace: rook-ceph
+        ---
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: rook-ceph-rgw-objectstore-loadbalancer
+          namespace: rook-ceph
+        spec:
+          type: LoadBalancer
+          selector:
+            app: rook-ceph-rgw
+            rook_cluster: rook-ceph
+            rook_object_store: objectstore
+          ports:
+            - name: s3
+              port: 80
+              targetPort: 8080 # rgw container port behind gateway.port 80
+              protocol: TCP
         ---
         apiVersion: v1
         kind: Service
