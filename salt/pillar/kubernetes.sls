@@ -19,3 +19,7 @@ hubble_metrics:
   - flow:sourceContext=reserved-identity;destinationContext=reserved-identity
   - port-distribution:destinationContext=reserved-identity
   - policy:sourceContext=reserved-identity;destinationContext=reserved-identity
+rook_ceph_chart: /root/kubestack/rook-ceph
+ceph_image: quay.io/ceph/ceph:v20.2.4
+ceph_node: localhost.localdomain
+ceph_device: /dev/disk/by-id/ata-T-FORCE_T253TY001T_TPBF2503200040100652

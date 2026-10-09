@@ -222,3 +222,146 @@ cilium_l2_announcements:
       - cmd: install_cilium
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
+
+rook_ceph_operator:
+  cmd.run:
+    - name: |
+        helm upgrade --install rook-ceph {{ pillar['rook_ceph_chart'] }} \
+          --namespace rook-ceph --create-namespace \
+          --values {{ pillar['rook_ceph_chart'] }}/values.yaml
+    - require:
+      - cmd: install_cilium
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+
+# single node: 1 mon, 1 mgr, 1 osd on ceph_device, pools with a single replica
+rook_ceph_cluster:
+  cmd.run:
+    - name: |
+        kubectl wait --for condition=established --timeout=180s \
+          crd/cephclusters.ceph.rook.io crd/cephblockpools.ceph.rook.io
+        kubectl apply -f - <<'MANIFEST'
+        apiVersion: ceph.rook.io/v1
+        kind: CephCluster
+        metadata:
+          name: rook-ceph
+          namespace: rook-ceph
+        spec:
+          cephVersion:
+            image: {{ pillar['ceph_image'] }}
+          dataDirHostPath: /var/lib/rook
+          security:
+            cephx:
+              csi:
+                keyType: aes # required on kernels older than 7.0
+          mon:
+            count: 1
+            allowMultiplePerNode: true
+          mgr:
+            count: 1
+            allowMultiplePerNode: true
+            modules:
+              - name: rook
+                enabled: true
+          dashboard:
+            enabled: true
+          crashCollector:
+            disable: true
+          annotations:
+            mgr:
+              prometheus.io/scrape: "true"
+              prometheus.io/port: "9283"
+          healthCheck:
+            muteHealthWarning:
+              AUTH_INSECURE_ROTATING_SERVICE_KEY_TYPE:
+                policy: mute
+              AUTH_INSECURE_CLIENT_KEY_TYPE:
+                policy: mute
+              AUTH_INSECURE_KEYS_ALLOWED:
+                policy: mute
+              AUTH_INSECURE_KEYS_CREATABLE:
+                policy: mute
+          cephConfig:
+            global:
+              osd_pool_default_size: "1"
+              mon_warn_on_pool_no_redundancy: "false"
+          storage:
+            useAllNodes: false
+            useAllDevices: false
+            nodes:
+              - name: {{ pillar['ceph_node'] }}
+                devices:
+                  - name: {{ pillar['ceph_device'] }}
+        ---
+        apiVersion: ceph.rook.io/v1
+        kind: CephBlockPool
+        metadata:
+          name: builtin-mgr
+          namespace: rook-ceph
+        spec:
+          name: .mgr
+          failureDomain: osd
+          replicated:
+            size: 1
+            requireSafeReplicaSize: false
+        ---
+        apiVersion: ceph.rook.io/v1
+        kind: CephBlockPool
+        metadata:
+          name: replicapool
+          namespace: rook-ceph
+        spec:
+          failureDomain: osd
+          replicated:
+            size: 1
+            requireSafeReplicaSize: false
+        ---
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: rook-ceph-block
+          annotations:
+            storageclass.kubernetes.io/is-default-class: "true"
+        provisioner: rook-ceph.rbd.csi.ceph.com
+        parameters:
+          clusterID: rook-ceph
+          pool: replicapool
+          imageFormat: "2"
+          imageFeatures: layering
+          csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+          csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+          csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
+          csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+          csi.storage.k8s.io/controller-publish-secret-name: rook-csi-rbd-provisioner
+          csi.storage.k8s.io/controller-publish-secret-namespace: rook-ceph
+          csi.storage.k8s.io/controller-modify-secret-name: rook-csi-rbd-provisioner
+          csi.storage.k8s.io/controller-modify-secret-namespace: rook-ceph
+          csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+          csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+          csi.storage.k8s.io/node-publish-secret-name: rook-csi-rbd-node
+          csi.storage.k8s.io/node-publish-secret-namespace: rook-ceph
+          csi.storage.k8s.io/fstype: xfs
+        allowVolumeExpansion: true
+        reclaimPolicy: Delete
+        ---
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: rook-ceph-mgr-dashboard-loadbalancer
+          namespace: rook-ceph
+        spec:
+          type: LoadBalancer
+          selector:
+            app: rook-ceph-mgr
+            mgr_role: active
+            rook_cluster: rook-ceph
+          ports:
+            - name: dashboard
+              port: 80
+              targetPort: 7000 # dashboard.ssl is unset, so the mgr serves plain http on 7000
+              protocol: TCP
+        MANIFEST
+    - require:
+      - cmd: rook_ceph_operator
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
