@@ -1340,3 +1340,32 @@ spec:
             name: prometheus-alertmanager
         - name: storage
           emptyDir: {}
+
+---
+# Source: prometheus/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    app.kubernetes.io/component: server
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/instance: prometheus
+    app.kubernetes.io/version: v3.10.0
+    helm.sh/chart: prometheus-28.14.0
+    app.kubernetes.io/part-of: prometheus
+  name: prometheus-server
+  namespace: default
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: prometheus.local
+      http:
+        paths:
+
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus-server
+                port:
+                  number: 80
