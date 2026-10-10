@@ -23,6 +23,39 @@ config:
     jaeger: null
     zipkin: null
     prometheus: null # own metrics are scraped by the ServiceMonitor instead
+  processors:
+    # set severity on plain-text formats loki can't detect on its own (it already reads level= / "level":)
+    transform/severity:
+      error_mode: ignore
+      log_statements:
+        - context: log
+          conditions:
+            - severity_text == "" and not IsMatch(body, "(^|\\s)level=|\"level\"\\s*:")
+          statements:
+            # klog (kubernetes components, csi sidecars): I1010 05:25:11.217060 ...
+            - set(severity_text, "INFO") where IsMatch(body, "^I\\d{4} ")
+            - set(severity_text, "WARN") where IsMatch(body, "^W\\d{4} ")
+            - set(severity_text, "ERROR") where IsMatch(body, "^E\\d{4} ")
+            - set(severity_text, "FATAL") where IsMatch(body, "^F\\d{4} ")
+            # ceph daemons: "debug <time> <thread> <prio> ..." (-1 derr, 0-4 info, 5+ debug)
+            - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "^debug \\S+ [0-9a-f]+ +-1 ")
+            - set(severity_text, "INFO") where severity_text == "" and IsMatch(body, "^debug \\S+ [0-9a-f]+ +[0-4] ")
+            - set(severity_text, "DEBUG") where severity_text == "" and IsMatch(body, "^debug \\S+ [0-9a-f]+ +([5-9]|\\d{2}) ")
+            # ceph cluster/audit log [DBG]/[INF]/[WRN]/[ERR] and nginx error log [warn]/[error]
+            - set(severity_text, "DEBUG") where severity_text == "" and IsMatch(body, "\\[(DBG|debug)\\]")
+            - set(severity_text, "INFO") where severity_text == "" and IsMatch(body, "\\[(INF|info|notice)\\]")
+            - set(severity_text, "WARN") where severity_text == "" and IsMatch(body, "\\[(WRN|warn|warning)\\]")
+            - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "\\[(ERR|error|crit|alert|emerg)\\]")
+            # http access logs (nginx combined, cortex gateway): 5xx error, 4xx warn, otherwise info
+            - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "^\\S+ - \\S+ \\[[^\\]]+\\] +(\"[^\"]*\" )?5\\d\\d ")
+            - set(severity_text, "WARN") where severity_text == "" and IsMatch(body, "^\\S+ - \\S+ \\[[^\\]]+\\] +(\"[^\"]*\" )?4\\d\\d ")
+            - set(severity_text, "INFO") where severity_text == "" and IsMatch(body, "^\\S+ - \\S+ \\[[^\\]]+\\] ")
+            # matching severity_number so any otlp consumer sees the same level
+            - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_text == "DEBUG"
+            - set(severity_number, SEVERITY_NUMBER_INFO) where severity_text == "INFO"
+            - set(severity_number, SEVERITY_NUMBER_WARN) where severity_text == "WARN"
+            - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_text == "ERROR"
+            - set(severity_number, SEVERITY_NUMBER_FATAL) where severity_text == "FATAL"
   exporters:
     debug: null
     otlphttp/loki:
@@ -33,7 +66,7 @@ config:
       metrics: null
       logs:
         receivers: [] # filelog is added by the logsCollection preset
-        processors: [memory_limiter, batch]
+        processors: [memory_limiter, transform/severity, batch]
         exporters: [otlphttp/loki]
 
 ports:
