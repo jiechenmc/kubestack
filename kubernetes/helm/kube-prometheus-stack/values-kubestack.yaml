@@ -9,6 +9,8 @@ prometheus:
     ruleSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
     scrapeConfigSelectorNilUsesHelmValues: false
+    # short local window; cortex keeps 30 days (remoteWrite below)
+    retention: 2d
     # long-term copy of every sample in cortex (salt state cortex)
     remoteWrite:
       - url: http://cortex-nginx.cortex.svc/api/v1/push
