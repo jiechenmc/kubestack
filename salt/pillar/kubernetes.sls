@@ -33,3 +33,6 @@ loki_chart: /root/kubestack/kubernetes/helm/loki
 snapshot_controller_chart: /root/kubestack/kubernetes/helm/snapshot-controller
 metrics_server_chart: /root/kubestack/kubernetes/helm/metrics-server
 infisical_operator_chart: /root/kubestack/kubernetes/helm/secrets-operator
+arc_controller_chart: /root/kubestack/kubernetes/helm/gha-runner-scale-set-controller
+arc_scale_set_chart: /root/kubestack/kubernetes/helm/gha-runner-scale-set
+github_runners_manifest: /root/kubestack/kubernetes/manifests/github-runners.yaml

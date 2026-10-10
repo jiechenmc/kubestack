@@ -26,6 +26,8 @@ SALT_MANAGED_CHARTS = {
     "snapshot-controller",
     "metrics-server",
     "secrets-operator",
+    "gha-runner-scale-set-controller",
+    "gha-runner-scale-set",
 }
 
 

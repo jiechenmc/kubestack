@@ -683,3 +683,25 @@ infisical_operator:
       - cmd: kube_prometheus_stack
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
+
+# self-hosted github actions runners (actions-runner-controller) for
+# jiechenmc/trix: PR previews (trix-cluster) and production deploys
+# (trix-deploy). their permissions and github token (synced from infisical,
+# hence the require) are in the manifest.
+github_runners:
+  cmd.run:
+    - name: |
+        helm upgrade --install arc {{ pillar['arc_controller_chart'] }} \
+          --namespace arc-systems --create-namespace \
+          --values {{ pillar['arc_controller_chart'] }}/values-kubestack.yaml
+        kubectl apply -f {{ pillar['github_runners_manifest'] }}
+        helm upgrade --install trix-cluster {{ pillar['arc_scale_set_chart'] }} \
+          --namespace arc-runners \
+          --values {{ pillar['arc_scale_set_chart'] }}/values-trix-cluster.yaml
+        helm upgrade --install trix-deploy {{ pillar['arc_scale_set_chart'] }} \
+          --namespace arc-runners \
+          --values {{ pillar['arc_scale_set_chart'] }}/values-trix-deploy.yaml
+    - require:
+      - cmd: infisical_operator
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
