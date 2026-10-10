@@ -18,11 +18,19 @@ operatorConfig:
       priorityClassName: system-node-critical
     controllerPlugin:
       priorityClassName: system-cluster-critical
+    # csi logs go to stderr (collected by the otel-logs daemonset into loki). rotation adds file logging
+    # plus a log-rotator sidecar whose cephcsi image has no logrotate binary ("logrotate: command not found")
+    log:
+      rotation:
+        enabled: false
 
 drivers:
   rbd:
     enabled: true
     name: rook-ceph.rbd.csi.ceph.com # csi-provisioner-name
+    log:
+      rotation:
+        enabled: false
     # Set snapshotPolicy to enable snapshot/group snapshot support.
     # If unset/none, the csi-snapshotter sidecar is not deployed.
     # Valid values: none, volumeSnapshot, volumeGroupSnapshot.
@@ -30,6 +38,9 @@ drivers:
   cephfs:
     enabled: true
     name: rook-ceph.cephfs.csi.ceph.com # csi-provisioner-name
+    log:
+      rotation:
+        enabled: false
     # snapshotPolicy: volumeSnapshot
   nfs:
     enabled: false
