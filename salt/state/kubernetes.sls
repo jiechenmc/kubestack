@@ -185,7 +185,11 @@ install_cilium:
           --set rollOutCiliumPods=true \
           --set operator.rollOutPods=true \
           --set prometheus.enabled=true \
+          --set prometheus.serviceMonitor.enabled=true \
           --set operator.prometheus.enabled=true \
+          --set operator.prometheus.serviceMonitor.enabled=true \
+          --set hubble.metrics.serviceMonitor.enabled=true \
+          --set envoy.prometheus.serviceMonitor.enabled=true \
           --set hubble.metrics.enableOpenMetrics=true \
           --set-json 'hubble.metrics.enabled={{ pillar['hubble_metrics'] | tojson }}' \
           --set dashboards.enabled=true \
@@ -193,6 +197,7 @@ install_cilium:
           --set operator.dashboards.enabled=true
     - require:
       - cmd: add_cilium_repo
+      - cmd: kube_prometheus_stack
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 cilium_l2_announcements:
@@ -223,6 +228,19 @@ cilium_l2_announcements:
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 
+# prometheus-operator, prometheus, alertmanager, grafana, node-exporter, kube-state-metrics.
+# installed before cilium/rook/cnpg monitors so their ServiceMonitor/PodMonitor CRDs exist
+kube_prometheus_stack:
+  cmd.run:
+    - name: |
+        helm upgrade --install kube-prometheus-stack {{ pillar['kps_chart'] }} \
+          --namespace monitoring --create-namespace \
+          --values {{ pillar['kps_chart'] }}/values-kubestack.yaml
+    - require:
+      - cmd: kubeadm_init
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+
 rook_ceph_operator:
   cmd.run:
     - name: |
@@ -231,6 +249,7 @@ rook_ceph_operator:
           --values {{ pillar['rook_ceph_chart'] }}/values.yaml
     - require:
       - cmd: install_cilium
+      - cmd: kube_prometheus_stack
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 
@@ -253,6 +272,15 @@ rook_ceph_cluster:
         kubectl wait --for condition=established --timeout=180s \
           crd/cephclusters.ceph.rook.io crd/cephblockpools.ceph.rook.io
         kubectl apply -f - <<'MANIFEST'
+        # rook applies this to the dashboard "admin" user on every reconcile (it only generates one if missing)
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: rook-ceph-dashboard-password
+          namespace: rook-ceph
+        stringData:
+          password: admin
+        ---
         apiVersion: ceph.rook.io/v1
         kind: CephCluster
         metadata:
@@ -277,13 +305,11 @@ rook_ceph_cluster:
                 enabled: true
           dashboard:
             enabled: true
-            prometheusEndpoint: http://prometheus-server.default.svc # dashboard graphs query this
+            prometheusEndpoint: http://kube-prometheus-stack-prometheus.monitoring.svc:9090 # dashboard graphs query this
           crashCollector:
             disable: true
-          annotations:
-            mgr:
-              prometheus.io/scrape: "true"
-              prometheus.io/port: "9283"
+          monitoring:
+            enabled: true # ServiceMonitors for mgr and ceph-exporter
           healthCheck:
             muteHealthWarning:
               AUTH_INSECURE_ROTATING_SERVICE_KEY_TYPE:
@@ -298,6 +324,9 @@ rook_ceph_cluster:
             global:
               osd_pool_default_size: "1"
               mon_warn_on_pool_no_redundancy: "false"
+            mgr:
+              # allow the simple dashboard password set in rook-ceph-dashboard-password
+              mgr/dashboard/PWD_POLICY_ENABLED: "false"
           storage:
             useAllNodes: false
             useAllDevices: false
@@ -425,5 +454,20 @@ rook_ceph_cluster:
         MANIFEST
     - require:
       - cmd: rook_ceph_operator
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+
+# cloudnative-pg operator: manages postgres Cluster resources
+cnpg_operator:
+  cmd.run:
+    - name: |
+        helm upgrade --install cnpg {{ pillar['cnpg_chart'] }} \
+          --namespace cnpg-system --create-namespace \
+          --values {{ pillar['cnpg_chart'] }}/values.yaml \
+          --set monitoring.podMonitorEnabled=true \
+          --set monitoring.grafanaDashboard.create=true
+    - require:
+      - cmd: install_cilium
+      - cmd: kube_prometheus_stack
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf

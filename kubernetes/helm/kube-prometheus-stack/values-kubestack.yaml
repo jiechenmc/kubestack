@@ -1,0 +1,60 @@
+# kubestack overrides for kube-prometheus-stack (chart defaults stay in values.yaml)
+
+# pick up ServiceMonitors/PodMonitors/PrometheusRules from every release (cilium, rook, cnpg),
+# not only ones labelled for this chart
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - prometheus.local
+    paths:
+      - /
+    pathType: Prefix
+
+# kubeadm binds these to 127.0.0.1 and cilium replaces kube-proxy, so they'd only show as down
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+grafana:
+  adminPassword: admin
+  service:
+    type: LoadBalancer
+    annotations:
+      lbipam.cilium.io/ips: "10.144.138.203"
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - grafana.local
+    path: /
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: Nodes
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      node-exporter-full:
+        gnetId: 1860
+        revision: 45
+        datasource: Prometheus

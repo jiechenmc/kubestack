@@ -14,7 +14,7 @@ from pathlib import Path
 HELM_DIR = Path("kubernetes/helm")
 GENERATED_DIR = Path("kubernetes/generated")
 # installed as helm releases by salt (salt/state/kubernetes.sls), not rendered here
-SALT_MANAGED_CHARTS = {"rook-ceph", "ceph-csi-drivers"}
+SALT_MANAGED_CHARTS = {"rook-ceph", "ceph-csi-drivers", "cloudnative-pg", "kube-prometheus-stack"}
 
 
 def run(cmd: list, capture=False) -> subprocess.CompletedProcess:

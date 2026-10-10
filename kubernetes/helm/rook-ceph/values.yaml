@@ -242,4 +242,4 @@ obcAllowAdditionalConfigFields: "maxObjects,maxSize"
 monitoring:
   # -- Enable monitoring. Requires Prometheus to be pre-installed.
   # Enabling will also create RBAC rules to allow Operator to create ServiceMonitors
-  enabled: false
+  enabled: true

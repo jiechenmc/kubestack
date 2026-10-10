@@ -24,3 +24,5 @@ ceph_image: quay.io/ceph/ceph:v20.2.4
 ceph_node: localhost.localdomain
 ceph_device: /dev/disk/by-id/ata-T-FORCE_T253TY001T_TPBF2503200040100652
 ceph_csi_drivers_chart: /root/kubestack/kubernetes/helm/ceph-csi-drivers
+cnpg_chart: /root/kubestack/kubernetes/helm/cloudnative-pg
+kps_chart: /root/kubestack/kubernetes/helm/kube-prometheus-stack
