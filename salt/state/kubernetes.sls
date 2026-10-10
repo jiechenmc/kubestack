@@ -163,6 +163,8 @@ add_cilium_repo:
 
 # MTU=1500: otherwise cilium uses the smallest host device mtu (tailscale0: 1280), leaving pods at 1230,
 # too small for quic's 1280-byte packets (cloudflared quic handshakes timed out)
+# routingMode=native: no vxlan encapsulation (pods get the full 1500 mtu instead of 1450); pod cidr is
+# routed directly, autoDirectNodeRoutes adds node-to-node pod routes once more nodes share this lan
 install_cilium:
   cmd.run:
     - name: |
@@ -171,6 +173,9 @@ install_cilium:
           --namespace kube-system \
           --set kubeProxyReplacement=true \
           --set MTU=1500 \
+          --set routingMode=native \
+          --set ipv4NativeRoutingCIDR={{ pillar['pod_cidr'] }} \
+          --set autoDirectNodeRoutes=true \
           --set k8sServiceHost={{ pillar['k8s_api_ip'] }} \
           --set k8sServicePort={{ pillar['k8s_svc_port'] }} \
           --set operator.replicas=1 \
