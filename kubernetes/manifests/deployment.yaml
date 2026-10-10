@@ -13,6 +13,9 @@ spec:
     metadata:
       labels:
         pod: cloudflared
+      annotations:
+        # restart when the infisical operator updates Secret tunnel-token (kubernetes/manifests/infisical.yaml)
+        secrets.infisical.com/auto-reload: "true"
     spec:
       securityContext:
         sysctls:
@@ -38,6 +41,10 @@ spec:
             - info
             - --metrics
             - 0.0.0.0:2000
+            # quic (udp 7844) to cloudflare's edge times out on this network; cloudflared's own precheck
+            # suggests http2, and the liveness probe kills the pod before the quic->http2 fallback finishes
+            - --protocol
+            - http2
             - run
           livenessProbe:
             httpGet:

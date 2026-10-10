@@ -161,6 +161,8 @@ add_cilium_repo:
     - name: helm repo add cilium https://helm.cilium.io/ && helm repo update
     - unless: helm repo list | grep cilium
 
+# MTU=1500: otherwise cilium uses the smallest host device mtu (tailscale0: 1280), leaving pods at 1230,
+# too small for quic's 1280-byte packets (cloudflared quic handshakes timed out)
 install_cilium:
   cmd.run:
     - name: |
@@ -168,6 +170,7 @@ install_cilium:
           --version {{ pillar['cilium_version'] }} \
           --namespace kube-system \
           --set kubeProxyReplacement=true \
+          --set MTU=1500 \
           --set k8sServiceHost={{ pillar['k8s_api_ip'] }} \
           --set k8sServicePort={{ pillar['k8s_svc_port'] }} \
           --set operator.replicas=1 \
