@@ -9,6 +9,10 @@ prometheus:
     ruleSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
     scrapeConfigSelectorNilUsesHelmValues: false
+    # cortex only accepts legacy [a-zA-Z_:][a-zA-Z0-9_:]* names and rejects the whole remote-write batch
+    # otherwise; scrape dotted otel names (otelcol.k8s.pod.association) as underscores instead
+    nameValidationScheme: Legacy
+    nameEscapingScheme: Underscores
     # accept tempo's metrics-generator output (service graphs, span metrics)
     enableRemoteWriteReceiver: true
     # short local window; cortex keeps 30 days (remoteWrite below)

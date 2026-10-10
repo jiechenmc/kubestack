@@ -327,6 +327,10 @@ rook_ceph_cluster:
             mgr:
               # allow the simple dashboard password set in rook-ceph-dashboard-password
               mgr/dashboard/PWD_POLICY_ENABLED: "false"
+            client.rgw:
+              # ceph 20 rejects sigv4 requests with unsigned headers; minio-go (cortex, tempo) never signs
+              # content-type ("'content-type' supplied but not in CanonicalHeaders"), so allow it
+              rgw_sigv4_insecure: "true"
           storage:
             useAllNodes: false
             useAllDevices: false
