@@ -19480,6 +19480,10 @@ spec:
     app.kubernetes.io/name: traefik
     app.kubernetes.io/instance: traefik-default
   ports:
+  - port: 5432
+    name: postgres
+    targetPort: postgres
+    protocol: TCP
   - port: 80
     name: web
     targetPort: web
@@ -19530,6 +19534,7 @@ spec:
       containers:
       - args:
         - --entryPoints.metrics.address=:9100/tcp
+        - --entryPoints.postgres.address=:5432/tcp
         - --entryPoints.traefik.address=:8080/tcp
         - --entryPoints.web.address=:8000/tcp
         - --entryPoints.websecure.address=:8443/tcp
@@ -19573,6 +19578,9 @@ spec:
         ports:
         - containerPort: 9100
           name: metrics
+          protocol: TCP
+        - containerPort: 5432
+          name: postgres
           protocol: TCP
         - containerPort: 8080
           name: traefik

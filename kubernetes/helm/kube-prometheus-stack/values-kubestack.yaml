@@ -24,7 +24,17 @@ prometheus:
     enabled: true
     ingressClassName: traefik
     hosts:
-      - prometheus.local
+      - prometheus.home.arpa
+    paths:
+      - /
+    pathType: Prefix
+
+alertmanager:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - alertmanager.home.arpa
     paths:
       - /
     pathType: Prefix
@@ -95,7 +105,7 @@ grafana:
     enabled: true
     ingressClassName: traefik
     hosts:
-      - grafana.local
+      - grafana.home.arpa
     path: /
   dashboardProviders:
     dashboardproviders.yaml:

@@ -1,0 +1,125 @@
+# pi-hole: lan dns (point devices at 10.144.138.210) with ad blocking.
+# *.home.arpa resolves to traefik (10.144.138.202), so any Ingress host under home.arpa just works;
+# everything else goes to cloudflare.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pihole
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pihole
+  namespace: pihole
+stringData:
+  password: admin
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pihole
+  namespace: pihole
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pihole
+  namespace: pihole
+spec:
+  replicas: 1
+  # rwo volume and a single dns instance: replace, don't overlap
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: pihole
+  template:
+    metadata:
+      labels:
+        app: pihole
+    spec:
+      containers:
+        - name: pihole
+          image: docker.io/pihole/pihole:2026.09.0
+          env:
+            - name: TZ
+              value: America/Chicago
+            - name: FTLCONF_webserver_api_password
+              valueFrom:
+                secretKeyRef: { name: pihole, key: password }
+            # queries arrive from lan clients via the cilium loadbalancer, not a local subnet
+            - name: FTLCONF_dns_listeningMode
+              value: all
+            - name: FTLCONF_dns_upstreams
+              value: "1.1.1.1;1.0.0.1"
+            # wildcard: every *.home.arpa name -> traefik, so new Ingress hosts need no dns change
+            # (raw dnsmasq line; shown under settings > all settings > misc.dnsmasq_lines, not local dns)
+            - name: FTLCONF_misc_dnsmasq_lines
+              value: "address=/home.arpa/10.144.138.202"
+            # the current ingress hosts as explicit records, so they're listed under local dns > dns records
+            - name: FTLCONF_dns_hosts
+              value: "10.144.138.202 grafana.home.arpa;10.144.138.202 prometheus.home.arpa;10.144.138.202 alertmanager.home.arpa;10.144.138.202 hubble.home.arpa;10.144.138.202 ceph.home.arpa;10.144.138.202 s3.home.arpa;10.144.138.202 pihole.home.arpa;10.144.138.202 pg.home.arpa"
+          ports:
+            - { name: dns-udp, containerPort: 53, protocol: UDP }
+            - { name: dns-tcp, containerPort: 53, protocol: TCP }
+            - { name: http, containerPort: 80, protocol: TCP }
+          securityContext:
+            capabilities:
+              # pi-hole setcap's pihole-FTL so it can bind :53 as non-root; cri-o (unlike docker)
+              # doesn't grant SETFCAP by default ("unable to set CAP_SETFCAP effective capability")
+              add: [SETFCAP]
+          readinessProbe:
+            exec:
+              command: [sh, -c, "dig +short +time=2 +tries=1 @127.0.0.1 pi.hole >/dev/null"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 512Mi }
+          volumeMounts:
+            - name: data
+              mountPath: /etc/pihole
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pihole
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole
+  namespace: pihole
+  annotations:
+    lbipam.cilium.io/ips: "10.144.138.210"
+spec:
+  type: LoadBalancer
+  selector:
+    app: pihole
+  ports:
+    - { name: dns-udp, port: 53, targetPort: dns-udp, protocol: UDP }
+    - { name: dns-tcp, port: 53, targetPort: dns-tcp, protocol: TCP }
+    - { name: http, port: 80, targetPort: http, protocol: TCP }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pihole
+  namespace: pihole
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: pihole.home.arpa
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pihole
+                port:
+                  name: http

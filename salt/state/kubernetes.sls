@@ -177,6 +177,9 @@ install_cilium:
           --set hubble.relay.enabled=true \
           --set hubble.ui.enabled=true \
           --set hubble.ui.service.type=LoadBalancer \
+          --set hubble.ui.ingress.enabled=true \
+          --set hubble.ui.ingress.className=traefik \
+          --set-json 'hubble.ui.ingress.hosts=["hubble.home.arpa"]' \
           --set socketLB.hostNamespaceOnly=false \
           --set l2announcements.enabled=true \
           --set externalIPs.enabled=true \
@@ -477,6 +480,45 @@ rook_ceph_cluster:
               port: 80
               targetPort: 8080 # rgw container port behind gateway.port 80
               protocol: TCP
+        ---
+        # ceph dashboard and s3 gateway by name through traefik (*.home.arpa -> traefik via pi-hole)
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          name: ceph-dashboard
+          namespace: rook-ceph
+        spec:
+          ingressClassName: traefik
+          rules:
+            - host: ceph.home.arpa
+              http:
+                paths:
+                  - path: /
+                    pathType: Prefix
+                    backend:
+                      service:
+                        name: rook-ceph-mgr-dashboard
+                        port:
+                          name: http-dashboard
+        ---
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          name: s3
+          namespace: rook-ceph
+        spec:
+          ingressClassName: traefik
+          rules:
+            - host: s3.home.arpa
+              http:
+                paths:
+                  - path: /
+                    pathType: Prefix
+                    backend:
+                      service:
+                        name: rook-ceph-rgw-objectstore
+                        port:
+                          number: 80
         ---
         apiVersion: v1
         kind: Service
