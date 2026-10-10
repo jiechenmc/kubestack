@@ -24,6 +24,7 @@ SALT_MANAGED_CHARTS = {
     "opentelemetry-collector",
     "loki",
     "snapshot-controller",
+    "metrics-server",
 }
 
 

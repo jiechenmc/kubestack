@@ -31,3 +31,4 @@ tempo_chart: /root/kubestack/kubernetes/helm/tempo
 otelcol_chart: /root/kubestack/kubernetes/helm/opentelemetry-collector
 loki_chart: /root/kubestack/kubernetes/helm/loki
 snapshot_controller_chart: /root/kubestack/kubernetes/helm/snapshot-controller
+metrics_server_chart: /root/kubestack/kubernetes/helm/metrics-server

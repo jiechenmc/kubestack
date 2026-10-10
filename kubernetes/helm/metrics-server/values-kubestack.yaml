@@ -1,0 +1,12 @@
+# kubestack overrides for metrics-server (chart defaults stay in values.yaml)
+# provides the metrics.k8s.io api: kubectl top, and cpu/memory HorizontalPodAutoscalers
+
+args:
+  # kubeadm's kubelet serves a self-signed certificate (issuer <node>-ca, not the cluster ca), so it
+  # can't be verified; the alternative is serverTLSBootstrap: true on the kubelet + approving its csrs
+  - --kubelet-insecure-tls
+
+metrics:
+  enabled: true
+serviceMonitor:
+  enabled: true

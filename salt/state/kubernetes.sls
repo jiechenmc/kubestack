@@ -256,6 +256,18 @@ rook_ceph_operator:
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 
+# metrics.k8s.io api (kubectl top, hpa)
+metrics_server:
+  cmd.run:
+    - name: |
+        helm upgrade --install metrics-server {{ pillar['metrics_server_chart'] }} \
+          --namespace kube-system \
+          --values {{ pillar['metrics_server_chart'] }}/values-kubestack.yaml
+    - require:
+      - cmd: kube_prometheus_stack
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+
 # volumesnapshot crds + snapshot-controller, then a snapshot class per ceph csi driver
 volume_snapshots:
   cmd.run:
