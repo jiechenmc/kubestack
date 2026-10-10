@@ -1,0 +1,53 @@
+# infisical -> kubernetes secret sync (operator: salt state infisical_operator).
+# credentials for the machine identity are in secrets.yaml (gitignored), Secret default/infisical-universal-auth.
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: trix
+  namespace: default
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: trix-1-btl
+        envSlug: dev
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: trix
+      secretNamespace: default
+      creationPolicy: Orphan
+      # only AMAP_SECURITY_CODE, not everything else in the project
+      template:
+        includeAllSecrets: false
+        data:
+          AMAP_SECURITY_CODE: "{{ .AMAP_SECURITY_CODE.Value }}"
+---
+# cloudflare tunnel token for cloudflared (deployment.yaml reads Secret tunnel-token, key token)
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: tunnel-token
+  namespace: default
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: kubestack-ke-j0
+        envSlug: prod # "Production"
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: tunnel-token
+      secretNamespace: default
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          token: "{{ .TUNNEL_TOKEN.Value }}"

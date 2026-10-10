@@ -4,3 +4,4 @@
 *.key
 .env
 secret.yaml
+secrets.yaml

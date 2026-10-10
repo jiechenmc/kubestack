@@ -648,3 +648,30 @@ logging:
       - cmd: kube_prometheus_stack
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
+
+# infisical secrets-operator: InfisicalSecret resources -> kubernetes Secrets
+infisical_operator:
+  cmd.run:
+    - name: |
+        helm upgrade --install infisical-operator {{ pillar['infisical_operator_chart'] }} \
+          --namespace infisical-operator-system --create-namespace \
+          --values {{ pillar['infisical_operator_chart'] }}/values-kubestack.yaml
+        kubectl apply -f - <<'MANIFEST'
+        # let prometheus scrape the operator's authenticated /metrics endpoint
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: infisical-operator-metrics-reader-prometheus
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: infisical-opera-metrics-reader
+        subjects:
+          - kind: ServiceAccount
+            name: kube-prometheus-stack-prometheus
+            namespace: monitoring
+        MANIFEST
+    - require:
+      - cmd: kube_prometheus_stack
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf

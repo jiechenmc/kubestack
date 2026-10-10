@@ -25,6 +25,7 @@ SALT_MANAGED_CHARTS = {
     "loki",
     "snapshot-controller",
     "metrics-server",
+    "secrets-operator",
 }
 
 
