@@ -61,12 +61,17 @@ grafana:
   # rwo volume: the old pod must release it before the new one starts
   deploymentStrategy:
     type: Recreate
+  # cortex (30 days) is the default; the chart's own Prometheus datasource (2 days local) stays available
+  sidecar:
+    datasources:
+      isDefaultDatasource: false
   additionalDataSources:
     - name: Cortex
       uid: cortex
       type: prometheus
       url: http://cortex-nginx.cortex.svc/prometheus
       access: proxy
+      isDefault: true
     - name: Tempo
       uid: tempo
       type: tempo
