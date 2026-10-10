@@ -51,3 +51,39 @@ spec:
         includeAllSecrets: false
         data:
           token: "{{ .TUNNEL_TOKEN.Value }}"
+---
+# ghcr.io image pull secret (docker config json stored as-is in infisical: GHCR_CREDENTIAL)
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: ghcr
+  namespace: default
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: kubestack-ke-j0
+        envSlug: prod # "Production"
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: ghcr
+      secretNamespace: default
+      creationPolicy: Orphan
+      secretType: kubernetes.io/dockerconfigjson
+      template:
+        includeAllSecrets: false
+        data:
+          .dockerconfigjson: "{{ .GHCR_CREDENTIAL.Value }}"
+---
+# every pod in default pulls from ghcr without listing imagePullSecrets itself
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: default
+imagePullSecrets:
+  - name: ghcr
