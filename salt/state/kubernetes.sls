@@ -495,3 +495,59 @@ cortex:
       - cmd: rook_ceph_cluster
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
+
+# tracing: tempo (traces in a ceph rgw bucket) behind an otlp gateway collector
+tracing:
+  cmd.run:
+    - name: |
+        kubectl create namespace tracing --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -f - <<'MANIFEST'
+        apiVersion: objectbucket.io/v1alpha1
+        kind: ObjectBucketClaim
+        metadata:
+          name: tempo-bucket
+          namespace: tracing
+        spec:
+          bucketName: tempo
+          storageClassName: rook-ceph-bucket
+        MANIFEST
+        kubectl -n tracing wait --for=jsonpath='{.status.phase}'=Bound obc/tempo-bucket --timeout=120s
+        helm upgrade --install tempo {{ pillar['tempo_chart'] }} \
+          --namespace tracing \
+          --values {{ pillar['tempo_chart'] }}/values-kubestack.yaml
+        helm upgrade --install otel-collector {{ pillar['otelcol_chart'] }} \
+          --namespace tracing \
+          --values {{ pillar['otelcol_chart'] }}/values-kubestack.yaml
+    - require:
+      - cmd: rook_ceph_cluster
+      - cmd: kube_prometheus_stack
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+
+# logging: loki (chunks in a ceph rgw bucket) fed by an otel collector daemonset tailing pod logs
+logging:
+  cmd.run:
+    - name: |
+        kubectl create namespace logging --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -f - <<'MANIFEST'
+        apiVersion: objectbucket.io/v1alpha1
+        kind: ObjectBucketClaim
+        metadata:
+          name: loki-bucket
+          namespace: logging
+        spec:
+          bucketName: loki
+          storageClassName: rook-ceph-bucket
+        MANIFEST
+        kubectl -n logging wait --for=jsonpath='{.status.phase}'=Bound obc/loki-bucket --timeout=120s
+        helm upgrade --install loki {{ pillar['loki_chart'] }} \
+          --namespace logging \
+          --values {{ pillar['loki_chart'] }}/values-kubestack.yaml
+        helm upgrade --install otel-logs {{ pillar['otelcol_chart'] }} \
+          --namespace logging \
+          --values {{ pillar['otelcol_chart'] }}/values-logs.yaml
+    - require:
+      - cmd: rook_ceph_cluster
+      - cmd: kube_prometheus_stack
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf

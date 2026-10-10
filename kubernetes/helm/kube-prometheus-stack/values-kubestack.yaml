@@ -9,6 +9,8 @@ prometheus:
     ruleSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
     scrapeConfigSelectorNilUsesHelmValues: false
+    # accept tempo's metrics-generator output (service graphs, span metrics)
+    enableRemoteWriteReceiver: true
     # short local window; cortex keeps 30 days (remoteWrite below)
     retention: 2d
     # long-term copy of every sample in cortex (salt state cortex)
@@ -35,12 +37,52 @@ kubeProxy:
 
 grafana:
   adminPassword: admin
+  # grafana 13 no longer bundles the loki datasource; install it from the plugin catalog at startup
+  plugins:
+    - loki
+  # keep grafana.db (users, ui-edited dashboards, preferences) and installed plugins across restarts
+  persistence:
+    enabled: true
+    size: 5Gi
+  # rwo volume: the old pod must release it before the new one starts
+  deploymentStrategy:
+    type: Recreate
   additionalDataSources:
     - name: Cortex
       uid: cortex
       type: prometheus
       url: http://cortex-nginx.cortex.svc/prometheus
       access: proxy
+    - name: Tempo
+      uid: tempo
+      type: tempo
+      url: http://tempo.tracing.svc:3200
+      access: proxy
+      jsonData:
+        serviceMap:
+          datasourceUid: prometheus
+        tracesToMetrics:
+          datasourceUid: prometheus
+        nodeGraph:
+          enabled: true
+        tracesToLogsV2:
+          datasourceUid: loki
+          spanStartTimeShift: -5m
+          spanEndTimeShift: 5m
+          filterByTraceID: true
+    - name: Loki
+      uid: loki
+      type: loki
+      url: http://loki.logging.svc:3100
+      access: proxy
+      jsonData:
+        # otlp logs carry trace_id as structured metadata; link it to tempo
+        derivedFields:
+          - name: TraceID
+            matcherType: label
+            matcherRegex: trace_id
+            datasourceUid: tempo
+            url: "$${__value.raw}"
   service:
     type: LoadBalancer
     annotations:

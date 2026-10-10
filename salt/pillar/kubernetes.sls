@@ -27,3 +27,6 @@ ceph_csi_drivers_chart: /root/kubestack/kubernetes/helm/ceph-csi-drivers
 cnpg_chart: /root/kubestack/kubernetes/helm/cloudnative-pg
 kps_chart: /root/kubestack/kubernetes/helm/kube-prometheus-stack
 cortex_chart: /root/kubestack/kubernetes/helm/cortex
+tempo_chart: /root/kubestack/kubernetes/helm/tempo
+otelcol_chart: /root/kubestack/kubernetes/helm/opentelemetry-collector
+loki_chart: /root/kubestack/kubernetes/helm/loki

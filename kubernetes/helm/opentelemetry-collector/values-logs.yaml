@@ -1,0 +1,57 @@
+# kubestack overrides for the "otel-logs" release of opentelemetry-collector (daemonset)
+# tails container logs on every node, adds k8s metadata and ships them to loki over otlp.
+# the "otel-collector" release (values-kubestack.yaml) is the separate otlp gateway for traces.
+
+mode: daemonset
+fullnameOverride: otel-logs
+
+image:
+  repository: otel/opentelemetry-collector-k8s
+
+presets:
+  # filelog receiver on /var/log/pods (+ host mount); checkpoints keep read offsets across restarts
+  logsCollection:
+    enabled: true
+    storeCheckpoints: true
+  # pod, namespace, deployment, node on every log record
+  kubernetesAttributes:
+    enabled: true
+
+config:
+  receivers:
+    otlp: null
+    jaeger: null
+    zipkin: null
+    prometheus: null # own metrics are scraped by the ServiceMonitor instead
+  exporters:
+    debug: null
+    otlphttp/loki:
+      endpoint: http://loki.logging.svc:3100/otlp
+  service:
+    pipelines:
+      traces: null
+      metrics: null
+      logs:
+        receivers: [] # filelog is added by the logsCollection preset
+        processors: [memory_limiter, batch]
+        exporters: [otlphttp/loki]
+
+ports:
+  otlp:
+    enabled: false
+  otlp-http:
+    enabled: false
+  jaeger-compact:
+    enabled: false
+  jaeger-thrift:
+    enabled: false
+  jaeger-grpc:
+    enabled: false
+  zipkin:
+    enabled: false
+  metrics:
+    enabled: true
+
+# daemonset mode has no service, so scrape the pods directly
+podMonitor:
+  enabled: true

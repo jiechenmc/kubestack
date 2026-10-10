@@ -1,0 +1,44 @@
+# kubestack overrides for tempo (chart defaults stay in values.yaml)
+# chart: grafana-community/tempo (single binary); the grafana/tempo chart is deprecated
+# traces in the ceph rgw bucket from the "tempo-bucket" ObjectBucketClaim (salt state tracing)
+
+tempo:
+  reportingEnabled: false
+  retention: 168h # 7 days
+  storage:
+    trace:
+      backend: s3
+      s3:
+        bucket: tempo
+        endpoint: rook-ceph-rgw-objectstore.rook-ceph.svc:80
+        insecure: true
+        # expanded from the bucket claim's secret via -config.expand-env (extraArgs/extraEnv below)
+        access_key: ${AWS_ACCESS_KEY_ID}
+        secret_key: ${AWS_SECRET_ACCESS_KEY}
+  # service graph + RED (rate/errors/duration) metrics from spans, written into prometheus
+  metricsGenerator:
+    enabled: true
+    remoteWriteUrl: http://kube-prometheus-stack-prometheus.monitoring.svc:9090/api/v1/write
+  overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics
+  extraArgs:
+    config.expand-env: "true"
+  extraEnv:
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef: { name: tempo-bucket, key: AWS_ACCESS_KEY_ID }
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef: { name: tempo-bucket, key: AWS_SECRET_ACCESS_KEY }
+
+# wal + blocks not yet flushed to s3
+persistence:
+  enabled: true
+  size: 10Gi
+
+serviceMonitor:
+  enabled: true
