@@ -471,3 +471,27 @@ cnpg_operator:
       - cmd: kube_prometheus_stack
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
+
+# cortex: long-term prometheus storage (remote write), blocks in a ceph rgw bucket
+cortex:
+  cmd.run:
+    - name: |
+        kubectl create namespace cortex --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -f - <<'MANIFEST'
+        apiVersion: objectbucket.io/v1alpha1
+        kind: ObjectBucketClaim
+        metadata:
+          name: cortex-bucket
+          namespace: cortex
+        spec:
+          bucketName: cortex
+          storageClassName: rook-ceph-bucket
+        MANIFEST
+        kubectl -n cortex wait --for=jsonpath='{.status.phase}'=Bound obc/cortex-bucket --timeout=120s
+        helm upgrade --install cortex {{ pillar['cortex_chart'] }} \
+          --namespace cortex \
+          --values {{ pillar['cortex_chart'] }}/values-kubestack.yaml
+    - require:
+      - cmd: rook_ceph_cluster
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf

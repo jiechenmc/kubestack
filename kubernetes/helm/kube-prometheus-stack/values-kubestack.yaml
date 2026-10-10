@@ -9,6 +9,9 @@ prometheus:
     ruleSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
     scrapeConfigSelectorNilUsesHelmValues: false
+    # long-term copy of every sample in cortex (salt state cortex)
+    remoteWrite:
+      - url: http://cortex-nginx.cortex.svc/api/v1/push
   ingress:
     enabled: true
     ingressClassName: traefik
@@ -30,6 +33,12 @@ kubeProxy:
 
 grafana:
   adminPassword: admin
+  additionalDataSources:
+    - name: Cortex
+      uid: cortex
+      type: prometheus
+      url: http://cortex-nginx.cortex.svc/prometheus
+      access: proxy
   service:
     type: LoadBalancer
     annotations:

@@ -1,0 +1,87 @@
+# kubestack overrides for cortex (chart defaults stay in values.yaml)
+# single node: one replica per component, replication factor 1, blocks in the ceph rgw bucket
+# from the "cortex-bucket" ObjectBucketClaim (salt state cortex_bucket)
+
+config:
+  ingester:
+    lifecycler:
+      ring:
+        replication_factor: 1
+  blocks_storage:
+    backend: s3
+    s3:
+      endpoint: rook-ceph-rgw-objectstore.rook-ceph.svc:80
+      insecure: true
+      bucket_name: cortex
+      # expanded from the bucket claim's secret via -config.expand-env (see s3Env below)
+      access_key_id: ${AWS_ACCESS_KEY_ID}
+      secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+  query_range:
+    # results cache needs memcached, which is disabled
+    cache_results: false
+  limits:
+    # compactor deletes blocks older than 30 days from the bucket
+    compactor_blocks_retention_period: 720h
+
+# kube-prometheus-stack already provides rule evaluation and alertmanager
+alertmanager:
+  enabled: false
+ruler:
+  enabled: false
+
+distributor:
+  replicas: 1
+  serviceMonitor:
+    enabled: true
+querier:
+  replicas: 1
+  serviceMonitor:
+    enabled: true
+  env: &s3Env
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef: { name: cortex-bucket, key: AWS_ACCESS_KEY_ID }
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef: { name: cortex-bucket, key: AWS_SECRET_ACCESS_KEY }
+  extraArgs: &expandEnv
+    config.expand-env: "true"
+query_frontend:
+  replicas: 1
+  serviceMonitor:
+    enabled: true
+nginx:
+  replicas: 1
+ingester:
+  replicas: 1
+  serviceMonitor:
+    enabled: true
+  # statefulset + pvc so the wal and the last ~2h of unshipped blocks survive restarts
+  statefulSet:
+    enabled: true
+  persistentVolume:
+    size: 5Gi
+  env: *s3Env
+  extraArgs: *expandEnv
+store_gateway:
+  replicas: 1
+  serviceMonitor:
+    enabled: true
+  env: *s3Env
+  extraArgs: *expandEnv
+compactor:
+  replicas: 1
+  serviceMonitor:
+    enabled: true
+  env: *s3Env
+  extraArgs: *expandEnv
+
+# the chart's bitnami memcached image tags are no longer published; caches aren't needed on one node
+memcached-frontend:
+  enabled: false
+memcached-blocks-index:
+  enabled: false
+memcached-blocks:
+  enabled: false
+memcached-blocks-metadata:
+  enabled: false
