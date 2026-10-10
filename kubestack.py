@@ -23,6 +23,7 @@ SALT_MANAGED_CHARTS = {
     "tempo",
     "opentelemetry-collector",
     "loki",
+    "snapshot-controller",
 }
 
 

@@ -34,14 +34,14 @@ drivers:
     # Set snapshotPolicy to enable snapshot/group snapshot support.
     # If unset/none, the csi-snapshotter sidecar is not deployed.
     # Valid values: none, volumeSnapshot, volumeGroupSnapshot.
-    # snapshotPolicy: volumeSnapshot
+    snapshotPolicy: volumeSnapshot # needs the snapshot-controller release (salt state volume_snapshots)
   cephfs:
     enabled: true
     name: rook-ceph.cephfs.csi.ceph.com # csi-provisioner-name
     log:
       rotation:
         enabled: false
-    # snapshotPolicy: volumeSnapshot
+    snapshotPolicy: volumeSnapshot
   nfs:
     enabled: false
     name: rook-ceph.nfs.csi.ceph.com # csi-provisioner-name

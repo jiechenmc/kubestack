@@ -253,6 +253,44 @@ rook_ceph_operator:
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 
+# volumesnapshot crds + snapshot-controller, then a snapshot class per ceph csi driver
+volume_snapshots:
+  cmd.run:
+    - name: |
+        helm upgrade --install snapshot-controller {{ pillar['snapshot_controller_chart'] }} \
+          --namespace kube-system \
+          --values {{ pillar['snapshot_controller_chart'] }}/values-kubestack.yaml
+        kubectl wait --for condition=established --timeout=120s crd/volumesnapshotclasses.snapshot.storage.k8s.io
+        kubectl apply -f - <<'MANIFEST'
+        apiVersion: snapshot.storage.k8s.io/v1
+        kind: VolumeSnapshotClass
+        metadata:
+          name: rook-ceph-block
+          annotations:
+            snapshot.storage.kubernetes.io/is-default-class: "true"
+        driver: rook-ceph.rbd.csi.ceph.com
+        deletionPolicy: Delete
+        parameters:
+          clusterID: rook-ceph
+          csi.storage.k8s.io/snapshotter-secret-name: rook-csi-rbd-provisioner
+          csi.storage.k8s.io/snapshotter-secret-namespace: rook-ceph
+        ---
+        apiVersion: snapshot.storage.k8s.io/v1
+        kind: VolumeSnapshotClass
+        metadata:
+          name: rook-cephfs
+        driver: rook-ceph.cephfs.csi.ceph.com
+        deletionPolicy: Delete
+        parameters:
+          clusterID: rook-ceph
+          csi.storage.k8s.io/snapshotter-secret-name: rook-csi-cephfs-provisioner
+          csi.storage.k8s.io/snapshotter-secret-namespace: rook-ceph
+        MANIFEST
+    - require:
+      - cmd: kube_prometheus_stack
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+
 # rbd/cephfs Driver CRs for ceph-csi-operator, which runs the csi plugins
 ceph_csi_drivers:
   cmd.run:
@@ -262,6 +300,7 @@ ceph_csi_drivers:
           --values {{ pillar['ceph_csi_drivers_chart'] }}/values-rook.yaml
     - require:
       - cmd: rook_ceph_operator
+      - cmd: volume_snapshots
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 
