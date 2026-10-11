@@ -1,0 +1,49 @@
+# kubestack overrides for opentelemetry-collector (chart defaults stay in values.yaml)
+# a single otlp gateway: apps send traces here, they get k8s metadata and go to tempo
+
+mode: deployment
+fullnameOverride: otel-collector
+
+image:
+  # curated kubernetes distribution (otlp, k8sattributes, kubeletstats, filelog, ...)
+  repository: otel/opentelemetry-collector-k8s
+
+presets:
+  # adds the k8sattributes processor (pod, namespace, deployment on every span) and its rbac
+  kubernetesAttributes:
+    enabled: true
+
+config:
+  receivers:
+    jaeger: null
+    zipkin: null
+    prometheus: null # own metrics are scraped by the ServiceMonitor instead
+  exporters:
+    debug: null
+    otlp/tempo:
+      endpoint: tempo.tracing.svc:4317
+      tls:
+        insecure: true
+  service:
+    pipelines:
+      logs: null
+      metrics: null
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [otlp/tempo]
+
+ports:
+  jaeger-compact:
+    enabled: false
+  jaeger-thrift:
+    enabled: false
+  jaeger-grpc:
+    enabled: false
+  zipkin:
+    enabled: false
+  metrics:
+    enabled: true
+
+serviceMonitor:
+  enabled: true

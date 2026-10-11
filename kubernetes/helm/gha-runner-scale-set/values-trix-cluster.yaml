@@ -1,0 +1,24 @@
+# Runner scale set "trix-cluster": self-hosted GitHub Actions runners for
+# jiechenmc/trix's PR previews (`runs-on: trix-cluster`). In-cluster because
+# GitHub's hosted runners can't reach a home cluster; runner pods are created
+# per job and removed after. Installed by the github_runners salt state;
+# permissions in kubernetes/manifests/github-runners.yaml.
+githubConfigUrl: https://github.com/jiechenmc/trix
+# Pre-defined secret with `github_token` (synced from Infisical).
+githubConfigSecret: trix-runner-github
+
+runnerScaleSetName: trix-cluster
+minRunners: 0
+maxRunners: 2
+
+template:
+  spec:
+    # Only allowed to manage previews in trix-preview.
+    serviceAccountName: trix-preview-deployer
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["/home/runner/run.sh"]
+        resources:
+          requests: { cpu: 100m, memory: 256Mi }
+          limits: { memory: 1Gi }

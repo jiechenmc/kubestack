@@ -1,0 +1,141 @@
+# Self-hosted GitHub Actions runners (actions-runner-controller): the
+# namespace, the runners' service accounts and what they may do, and the
+# GitHub token they register with. Applied by the github_runners salt state.
+#
+# - trix-preview-deployer (scale set trix-cluster): manage PR previews in
+#   trix-preview; nothing in default, no secrets.
+# - trix-prod-deployer (scale set trix-deploy): update the existing trix
+#   resources in default (kubectl apply of trix's k8s/trix.yaml) and watch
+#   the rollout; no create/delete, no secrets.
+---
+# trix-preview is trix's dev environment (its k8s/preview/dev.yaml also
+# declares it); declared here too so the role below can be bound first.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: trix-preview
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arc-runners
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: trix-preview-deployer
+  namespace: arc-runners
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: preview-deployer
+  namespace: trix-preview
+rules:
+  - apiGroups: ["apps"]
+    resources: [deployments]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: ["apps"]
+    resources: [replicasets]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [services]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [pods, pods/log, events]
+    verbs: [get, list, watch]
+  - apiGroups: ["networking.k8s.io"]
+    resources: [ingresses]
+    verbs: [get, list, watch, create, update, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: preview-deployer
+  namespace: trix-preview
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: preview-deployer
+subjects:
+  - kind: ServiceAccount
+    name: trix-preview-deployer
+    namespace: arc-runners
+---
+# GitHub credentials for registering the runners: a fine-grained PAT scoped to
+# jiechenmc/trix with "Administration: Read and write" (repo-level runners),
+# stored in Infisical as TRIX_RUNNER_GITHUB_TOKEN.
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: trix-runner-github
+  namespace: arc-runners
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef: { secretName: infisical-universal-auth, secretNamespace: default }
+      secretsScope: { projectSlug: kubestack-ke-j0, envSlug: prod, secretsPath: / }
+  managedKubeSecretReferences:
+    - secretName: trix-runner-github
+      secretNamespace: arc-runners
+      secretType: Opaque
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          github_token: "{{ .TRIX_RUNNER_GITHUB_TOKEN.Value }}"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: trix-prod-deployer
+  namespace: arc-runners
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: trix-deployer
+  namespace: default
+rules:
+  - apiGroups: ["apps"]
+    resources: [deployments]
+    resourceNames: [trix]
+    verbs: [get, list, watch, patch]
+  - apiGroups: [""]
+    resources: [services]
+    resourceNames: [trix]
+    verbs: [get, patch]
+  - apiGroups: ["networking.k8s.io"]
+    resources: [ingresses]
+    resourceNames: [trix]
+    verbs: [get, patch]
+  - apiGroups: ["objectbucket.io"]
+    resources: [objectbucketclaims]
+    resourceNames: [trix-images]
+    verbs: [get, patch]
+  - apiGroups: ["secrets.infisical.com"]
+    resources: [infisicalsecrets]
+    resourceNames: [trix-auth]
+    verbs: [get, patch]
+  # `kubectl rollout status` follows the deployment's replicasets/pods.
+  - apiGroups: ["apps"]
+    resources: [replicasets]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: trix-deployer
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: trix-deployer
+subjects:
+  - kind: ServiceAccount
+    name: trix-prod-deployer
+    namespace: arc-runners

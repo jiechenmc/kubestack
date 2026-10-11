@@ -1,0 +1,10 @@
+# kubestack overrides for snapshot-controller (chart defaults stay in values.yaml)
+# volumesnapshot crds + snapshot-controller (external-snapshotter); the ceph csi drivers' csi-snapshotter
+# sidecars need them. the VolumeSnapshotClasses are applied by the salt state once the crds exist.
+
+# keep the crds (and with them every VolumeSnapshot) if the release is ever uninstalled
+keepCRDs: true
+
+controller:
+  serviceMonitor:
+    create: true

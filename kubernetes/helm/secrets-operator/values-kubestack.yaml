@@ -1,0 +1,9 @@
+# kubestack overrides for the infisical secrets-operator (chart defaults stay in values.yaml)
+# syncs secrets from infisical into kubernetes Secrets via InfisicalSecret resources.
+# hostAPI stays at the chart default (infisical cloud, https://app.infisical.com/api); set it for self-hosted.
+
+telemetry:
+  serviceMonitor:
+    # metrics are behind authn/authz: the salt state binds the chart's metrics-reader clusterrole
+    # to kube-prometheus-stack's prometheus service account
+    enabled: true

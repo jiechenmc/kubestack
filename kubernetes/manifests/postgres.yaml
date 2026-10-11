@@ -1,0 +1,42 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pg
+spec:
+  # single node: one instance; raise to 3 (primary + 2 replicas) once there are more nodes
+  instances: 3
+  storage:
+    storageClass: rook-ceph-block
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+---
+# scraped by kube-prometheus-stack; cnpg instances expose metrics on the "metrics" port (9187)
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: pg
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: pg
+      cnpg.io/podRole: instance
+  podMetricsEndpoints:
+    - port: metrics
+---
+# postgres from the lan: pg.home.arpa:5432 -> traefik "postgres" entrypoint -> primary (pg-rw).
+# plain tcp can't be routed by hostname, so HostSNI(`*`): one cluster per entrypoint port.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: pg
+spec:
+  entryPoints:
+    - postgres
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: pg-rw
+          port: 5432

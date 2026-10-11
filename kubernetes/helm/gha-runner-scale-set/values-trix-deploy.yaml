@@ -1,0 +1,24 @@
+# Runner scale set "trix-deploy": runs only jiechenmc/trix's production deploy
+# job (`runs-on: trix-deploy`). Separate from trix-cluster so preview jobs
+# never carry production permissions. Installed by the github_runners salt
+# state; permissions in kubernetes/manifests/github-runners.yaml.
+#
+# Repo-level runners can't be limited to the main branch, so anyone who can
+# push a branch to the repo could target these -- hence the narrow role.
+githubConfigUrl: https://github.com/jiechenmc/trix
+githubConfigSecret: trix-runner-github
+
+runnerScaleSetName: trix-deploy
+minRunners: 0
+maxRunners: 1
+
+template:
+  spec:
+    serviceAccountName: trix-prod-deployer
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["/home/runner/run.sh"]
+        resources:
+          requests: { cpu: 100m, memory: 256Mi }
+          limits: { memory: 1Gi }

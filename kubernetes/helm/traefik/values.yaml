@@ -996,6 +996,14 @@ ports:
       tracing: # @schema type:[boolean, null]; default: true
       # -- Defines the tracing verbosity level for this entryPoint.
       traceVerbosity: # @schema enum:[minimal, detailed, null]; type:[string, null]; default: minimal
+  # raw tcp entrypoint for postgres (IngressRouteTCP in kubernetes/manifests/postgres.yaml routes it to the
+  # cnpg pg-rw service); bytes pass through untouched, so postgres' own tls still works end to end
+  postgres:
+    port: 5432
+    expose:
+      default: true
+    exposedPort: 5432
+    protocol: TCP
 
 # -- TLS Options are created as [TLSOption CRDs](https://doc.traefik.io/traefik/https/tls/#tls-options)
 # When using `labelSelector`, you'll need to set labels on tlsOption accordingly.

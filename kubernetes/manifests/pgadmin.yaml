@@ -1,0 +1,133 @@
+# pgadmin4 at http://pgadmin.home.arpa, with the cnpg clusters pre-registered.
+# login: admin@jiechen.dev / Secret pgadmin/pgadmin (password lives in secrets.yaml, which is gitignored)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pgadmin
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgadmin-servers
+  namespace: pgadmin
+data:
+  # imported on first start; each server asks for the app user's password (Secret pg-app / pg-dev-app)
+  servers.json: |
+    {
+      "Servers": {
+        "1": {
+          "Name": "pg (default)",
+          "Group": "cnpg",
+          "Host": "pg-rw.default.svc",
+          "Port": 5432,
+          "MaintenanceDB": "app",
+          "Username": "app",
+          "SSLMode": "require"
+        },
+        "2": {
+          "Name": "pg-dev (trix-preview)",
+          "Group": "cnpg",
+          "Host": "pg-dev-rw.trix-preview.svc",
+          "Port": 5432,
+          "MaintenanceDB": "app",
+          "Username": "app",
+          "SSLMode": "require"
+        }
+      }
+    }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pgadmin
+  namespace: pgadmin
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+  namespace: pgadmin
+spec:
+  replicas: 1
+  # rwo volume: replace, don't overlap
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+    spec:
+      securityContext:
+        # pgadmin runs as uid/gid 5050 and needs to own /var/lib/pgadmin on the volume
+        fsGroup: 5050
+      containers:
+        - name: pgadmin
+          image: docker.io/dpage/pgadmin4:9.18.0
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              value: admin@jiechen.dev
+            - name: PGADMIN_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: pgadmin, key: password }
+            - name: PGADMIN_SERVER_JSON_FILE
+              value: /pgadmin4/config/servers.json
+            # no telemetry/update checks
+            - name: PGADMIN_CONFIG_UPGRADE_CHECK_ENABLED
+              value: "False"
+          ports:
+            - { name: http, containerPort: 80 }
+          readinessProbe:
+            httpGet: { path: /misc/ping, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { memory: 1Gi }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/pgadmin }
+            - { name: servers, mountPath: /pgadmin4/config, readOnly: true }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pgadmin
+        - name: servers
+          configMap:
+            name: pgadmin-servers
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin
+  namespace: pgadmin
+spec:
+  selector:
+    app: pgadmin
+  ports:
+    - { name: http, port: 80, targetPort: http }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pgadmin
+  namespace: pgadmin
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: pgadmin.home.arpa
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pgadmin
+                port:
+                  name: http

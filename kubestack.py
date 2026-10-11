@@ -13,6 +13,22 @@ from pathlib import Path
 
 HELM_DIR = Path("kubernetes/helm")
 GENERATED_DIR = Path("kubernetes/generated")
+# installed as helm releases by salt (salt/state/kubernetes.sls), not rendered here
+SALT_MANAGED_CHARTS = {
+    "rook-ceph",
+    "ceph-csi-drivers",
+    "cloudnative-pg",
+    "kube-prometheus-stack",
+    "cortex",
+    "tempo",
+    "opentelemetry-collector",
+    "loki",
+    "snapshot-controller",
+    "metrics-server",
+    "secrets-operator",
+    "gha-runner-scale-set-controller",
+    "gha-runner-scale-set",
+}
 
 
 def run(cmd: list, capture=False) -> subprocess.CompletedProcess:
@@ -31,7 +47,11 @@ def cmd_generate():
 
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 
-    charts = [d for d in sorted(HELM_DIR.iterdir()) if d.is_dir()]
+    charts = [
+        d
+        for d in sorted(HELM_DIR.iterdir())
+        if d.is_dir() and d.name not in SALT_MANAGED_CHARTS
+    ]
     if not charts:
         print(f"No charts found in {HELM_DIR}")
         sys.exit(1)

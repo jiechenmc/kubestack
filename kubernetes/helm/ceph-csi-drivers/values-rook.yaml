@@ -1,0 +1,50 @@
+# Rook overrides for ceph-csi-drivers, from
+# https://raw.githubusercontent.com/rook/rook/v1.21.0/deploy/charts/ceph-csi-drivers/values.yaml
+# Rook-compatible default values for the ceph-csi-drivers Helm chart.
+#
+# Use these values when installing or upgrading the ceph-csi-drivers chart
+# alongside the rook-ceph operator chart. The driver names must match the
+# provisioner names used by Rook (e.g. in StorageClasses and VolumeSnapshotClasses).
+#
+# If the Rook operator is installed in a namespace other than rook-ceph, replace
+# "rook-ceph" in the driver names below with your operator namespace.
+
+operatorConfig:
+  namespace: rook-ceph # namespace:operator
+  driverSpecDefaults:
+    imageSet:
+      name: rook-csi-operator-image-set-configmap
+    nodePlugin:
+      priorityClassName: system-node-critical
+    controllerPlugin:
+      priorityClassName: system-cluster-critical
+    # csi logs go to stderr (collected by the otel-logs daemonset into loki). rotation adds file logging
+    # plus a log-rotator sidecar whose cephcsi image has no logrotate binary ("logrotate: command not found")
+    log:
+      rotation:
+        enabled: false
+
+drivers:
+  rbd:
+    enabled: true
+    name: rook-ceph.rbd.csi.ceph.com # csi-provisioner-name
+    log:
+      rotation:
+        enabled: false
+    # Set snapshotPolicy to enable snapshot/group snapshot support.
+    # If unset/none, the csi-snapshotter sidecar is not deployed.
+    # Valid values: none, volumeSnapshot, volumeGroupSnapshot.
+    snapshotPolicy: volumeSnapshot # needs the snapshot-controller release (salt state volume_snapshots)
+  cephfs:
+    enabled: true
+    name: rook-ceph.cephfs.csi.ceph.com # csi-provisioner-name
+    log:
+      rotation:
+        enabled: false
+    snapshotPolicy: volumeSnapshot
+  nfs:
+    enabled: false
+    name: rook-ceph.nfs.csi.ceph.com # csi-provisioner-name
+  nvmeof:
+    enabled: false
+    name: rook-ceph.nvmeof.csi.ceph.com # csi-provisioner-name

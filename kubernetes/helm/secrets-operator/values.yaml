@@ -1,0 +1,115 @@
+# -- The Infisical API host URL. This is the default host used when no hostAPI is set on the CRD or global ConfigMap.
+hostAPI: "https://app.infisical.com/api"
+
+logger:
+  # -- The output of the logs. Can be "stdout" or "stderr". Defaults to "stderr".
+  writer: "stderr"
+
+controllerManager:
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
+  # -- Extra volumes to add to the pod
+  extraVolumes: []
+  # -- Extra init containers to add to the pod
+  extraInitContainers: []
+  manager:
+    args:
+    - --metrics-bind-address=:8443
+    - --leader-elect
+    - --health-probe-bind-address=:8081
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+    image:
+      repository: infisical/kubernetes-operator
+      tag: v0.11.11
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 10m
+        memory: 64Mi
+    # -- Extra environment variables to add to the manager container
+    extraEnv: []
+    # -- Extra volume mounts to add to the manager container
+    extraVolumeMounts: []
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  replicas: 1
+kubernetesClusterDomain: cluster.local
+
+# DEPRECATED: Use scopedNamespaces instead. This field will be removed in a future version.
+# If both scopedNamespace and scopedNamespaces are set, scopedNamespaces takes precedence.
+scopedNamespace: ""
+
+# List of namespaces to watch. If empty, the operator watches all namespaces (cluster-scoped).
+# When scopedRBAC is true, a Role and RoleBinding will be created in each namespace.
+# Example:
+#   scopedNamespaces:
+#     - team-a-namespace
+#     - team-b-namespace
+scopedNamespaces: []
+
+scopedRBAC: false
+installCRDs: true
+imagePullSecrets: []
+
+# Configures the default InfisicalConnection CR which will be used by resources
+# if they do not specify a connection reference. The name is 'default' and will
+# always be installed in the same namespace as the operator.
+defaultInfisicalConnection:
+  # -- Toggles the deployment of the default InfisicalConnection CR
+  # @type: boolean
+  enabled: false
+
+  # -- Address of the Infisical instance API
+  # @type: string
+  # Example: https://app.infisical.com/api
+  address: ""
+
+  # -- TLS configuration for the connection
+  tls:
+    # -- Reference to a Kubernetes secret containing the CA certificate
+    caCertificate:
+      # -- Name of the Kubernetes secret
+      # @type: string
+      name: ""
+      # -- Namespace of the Kubernetes secret
+      # @type: string
+      namespace: ""
+      # -- Key in the secret that contains the certificate
+      # @type: string
+      key: ""
+
+metricsService:
+  ports:
+    - name: https
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+  type: ClusterIP
+
+telemetry:
+  serviceMonitor:
+    enabled: false
+
+    selectors: {}
+    releaseLabel: prometheus
+    scheme: https
+    port: https
+    path: /metrics
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    interval: 30s
+    scrapeTimeout: 10s

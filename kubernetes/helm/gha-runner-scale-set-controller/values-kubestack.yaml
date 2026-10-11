@@ -1,0 +1,3 @@
+# actions-runner-controller: runs self-hosted GitHub Actions runner scale sets
+# (gha-runner-scale-set releases, see github_runners in salt). Chart defaults.
+{}
