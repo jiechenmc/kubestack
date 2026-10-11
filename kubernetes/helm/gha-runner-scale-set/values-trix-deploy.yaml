@@ -19,6 +19,19 @@ template:
       - name: runner
         image: ghcr.io/actions/actions-runner:latest
         command: ["/home/runner/run.sh"]
+        env:
+          # kubectl from the image volume below, ahead of the runner image's default PATH
+          - name: PATH
+            value: /opt/kubectl/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        volumeMounts:
+          - { name: kubectl, mountPath: /opt/kubectl, readOnly: true }
         resources:
           requests: { cpu: 100m, memory: 256Mi }
           limits: { memory: 1Gi }
+    volumes:
+      # the official kubectl image mounted read-only (kubernetes image volumes); pulled once per node,
+      # so workflows don't install kubectl. keep the tag in step with the cluster version.
+      - name: kubectl
+        image:
+          reference: registry.k8s.io/kubectl:v1.36.5
+          pullPolicy: IfNotPresent
