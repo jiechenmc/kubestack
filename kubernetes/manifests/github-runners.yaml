@@ -114,6 +114,10 @@ rules:
     resources: [objectbucketclaims]
     resourceNames: [trix-images]
     verbs: [get, patch]
+  - apiGroups: ["secrets.infisical.com"]
+    resources: [infisicalsecrets]
+    resourceNames: [trix-auth]
+    verbs: [get, patch]
   # `kubectl rollout status` follows the deployment's replicasets/pods.
   - apiGroups: ["apps"]
     resources: [replicasets]
