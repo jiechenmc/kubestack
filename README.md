@@ -27,6 +27,13 @@ A highly available 3 node `k3s` and `kind` cluster is primarily used for explori
 
 In addition to the `k3s` and `kind` clusters, I use `Docker` compose since it is easier to maintain and allows me to focus on learning the applications.
 
+## Kubestack
+
+<figure>
+  <img src="docs/kubestack-homelab.svg" alt="Kubestack architecture: network and ingress, apps and platform, observability, and Rook-Ceph storage on one node">
+  <figcaption>LAN devices resolve <code>*.home.arpa</code> through Pi-hole to Traefik; internet traffic reaches trix through a Cloudflare tunnel; Cortex, Tempo and Loki keep their data in S3 buckets on Ceph.</figcaption>
+</figure>
+
 ## Applications
 
 - Pi-hole
