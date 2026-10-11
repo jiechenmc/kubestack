@@ -74,8 +74,10 @@ spec:
   resyncInterval: 60
   authentication:
     universalAuth:
-      credentialsRef: { secretName: infisical-universal-auth, secretNamespace: default }
-      secretsScope: { projectSlug: kubestack-ke-j0, envSlug: prod, secretsPath: / }
+      credentialsRef:
+        { secretName: infisical-universal-auth, secretNamespace: default }
+      secretsScope:
+        { projectSlug: kubestack-ke-j0, envSlug: prod, secretsPath: / }
   managedKubeSecretReferences:
     - secretName: trix-runner-github
       secretNamespace: arc-runners
@@ -139,3 +141,71 @@ subjects:
   - kind: ServiceAccount
     name: trix-prod-deployer
     namespace: arc-runners
+---
+# Listener restarts. The ARC listener (0.15.0, actions/scaleset v0.4.1) renews its broker message
+# session about an hour after creating it; GitHub's broker never answers that PATCH on the long-lived
+# connection, and the listener then keeps polling with the unrenewed session and silently stops getting
+# jobs ("about to start running on the runner" forever). Restarting a listener creates a fresh session
+# that picks up any already-assigned job, so restart them every 45 minutes, before the first renewal.
+# Remove once a release with the fix ships (see actions/scaleset#130).
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: listener-restarter
+  namespace: arc-systems
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: listener-restarter
+  namespace: arc-systems
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: listener-restarter
+  namespace: arc-systems
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: listener-restarter
+subjects:
+  - kind: ServiceAccount
+    name: listener-restarter
+    namespace: arc-systems
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: listener-restarter
+  namespace: arc-systems
+spec:
+  schedule: "*/45 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          serviceAccountName: listener-restarter
+          restartPolicy: Never
+          containers:
+            - name: kubectl
+              image: registry.k8s.io/kubectl:v1.36.5
+              args:
+                - --namespace=arc-systems
+                - delete
+                - pod
+                - --selector=app.kubernetes.io/component=runner-scale-set-listener
+                - --wait=false
+              resources:
+                requests: { cpu: 10m, memory: 32Mi }
+                limits: { memory: 128Mi }
