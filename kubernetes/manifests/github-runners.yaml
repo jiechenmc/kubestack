@@ -7,6 +7,8 @@
 # - trix-prod-deployer (scale set trix-deploy): update the existing trix
 #   resources in default (kubectl apply of trix's k8s/trix.yaml) and watch
 #   the rollout; no create/delete, no secrets.
+# - plantain-build: builds jiechenmc/plantain; default service account (no
+#   cluster access), its own token and a persistent build cache.
 ---
 # trix-preview is trix's dev environment (its k8s/preview/dev.yaml also
 # declares it); declared here too so the role below can be bound first.
@@ -141,6 +143,47 @@ subjects:
   - kind: ServiceAccount
     name: trix-prod-deployer
     namespace: arc-runners
+---
+# plantain-build's GitHub credentials: a fine-grained PAT scoped to
+# jiechenmc/plantain with "Administration: Read and write", stored in
+# Infisical as PLANTAIN_RUNNER_GITHUB_TOKEN.
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: plantain-runner-github
+  namespace: arc-runners
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        { secretName: infisical-universal-auth, secretNamespace: default }
+      secretsScope:
+        { projectSlug: kubestack-ke-j0, envSlug: prod, secretsPath: / }
+  managedKubeSecretReferences:
+    - secretName: plantain-runner-github
+      secretNamespace: arc-runners
+      secretType: Opaque
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          github_token: "{{ .PLANTAIN_RUNNER_GITHUB_TOKEN.Value }}"
+---
+# plantain-build's cache, kept across its per-job runner pods: docker's image
+# store (the Unity editor image) under docker/, the job workspace (checkout +
+# Library/) under work/. Safe to delete; the next build just starts cold.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plantain-build-cache
+  namespace: arc-runners
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: rook-ceph-block
+  resources:
+    requests:
+      storage: 60Gi
 ---
 # Listener restarts. The ARC listener (0.15.0, actions/scaleset v0.4.1) renews its broker message
 # session about an hour after creating it; GitHub's broker never answers that PATCH on the long-lived

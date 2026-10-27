@@ -686,7 +686,8 @@ infisical_operator:
 
 # self-hosted github actions runners (actions-runner-controller) for
 # jiechenmc/trix: PR previews (trix-cluster) and production deploys
-# (trix-deploy). their permissions and github token (synced from infisical,
+# (trix-deploy); and jiechenmc/plantain's unity builds (plantain-build).
+# their permissions and github token (synced from infisical,
 # hence the require) are in the manifest.
 github_runners:
   cmd.run:
@@ -701,6 +702,9 @@ github_runners:
         helm upgrade --install trix-deploy {{ pillar['arc_scale_set_chart'] }} \
           --namespace arc-runners \
           --values {{ pillar['arc_scale_set_chart'] }}/values-trix-deploy.yaml
+        helm upgrade --install plantain-build {{ pillar['arc_scale_set_chart'] }} \
+          --namespace arc-runners \
+          --values {{ pillar['arc_scale_set_chart'] }}/values-plantain-build.yaml
     - require:
       - cmd: infisical_operator
     - env:

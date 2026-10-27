@@ -1,0 +1,77 @@
+# Runner scale set "plantain-build": builds jiechenmc/plantain's Unity WebGL
+# player (`runs-on: plantain-build`). game-ci/unity-builder runs Unity in a
+# docker container, so the runner gets a docker-in-docker sidecar. The chart's
+# containerMode: dind is spelled out here instead, so docker's image store and
+# the job workspace can live on a persistent volume: the ~7GB Unity image and
+# the project's Library/ import cache survive between jobs, and the steps that
+# make GitHub-hosted builds slow (disk cleanup, image pull, full reimport) go
+# away. Installed by the github_runners salt state; the volume and token are in
+# kubernetes/manifests/github-runners.yaml.
+#
+# The dind sidecar is privileged (root on the node), and repo-level runners
+# can't be limited to the main branch: anyone who can push a branch to
+# plantain can run code here. Fine while the repo is private and single-owner.
+githubConfigUrl: https://github.com/jiechenmc/plantain
+githubConfigSecret: plantain-runner-github
+
+runnerScaleSetName: plantain-build
+minRunners: 0
+# One at a time: both runner and dind mount the ReadWriteOnce cache volume.
+maxRunners: 1
+
+template:
+  spec:
+    initContainers:
+      - name: init-dind-externals
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+        volumeMounts:
+          - { name: dind-externals, mountPath: /home/runner/tmpDir }
+      # native sidecar: starts before the runner, stopped after it
+      - name: dind
+        image: docker:dind
+        args:
+          - dockerd
+          - --host=unix:///var/run/docker.sock
+          - --group=$(DOCKER_GROUP_GID)
+        env:
+          - { name: DOCKER_GROUP_GID, value: "123" }
+        securityContext:
+          privileged: true
+        restartPolicy: Always
+        startupProbe:
+          exec:
+            command: [docker, info]
+          failureThreshold: 24
+          periodSeconds: 5
+        volumeMounts:
+          - { name: cache, mountPath: /var/lib/docker, subPath: docker }
+          - { name: cache, mountPath: /home/runner/_work, subPath: work }
+          - { name: dind-sock, mountPath: /var/run }
+          - { name: dind-externals, mountPath: /home/runner/externals }
+        # Unity runs inside this container's cgroup. WebGL (IL2CPP + emscripten)
+        # uses every core it gets and several GB of RAM; no CPU limit on purpose.
+        resources:
+          requests: { cpu: "2", memory: 4Gi }
+          limits: { memory: 24Gi }
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["/home/runner/run.sh"]
+        env:
+          - { name: DOCKER_HOST, value: unix:///var/run/docker.sock }
+          - { name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS, value: "120" }
+        volumeMounts:
+          - { name: cache, mountPath: /home/runner/_work, subPath: work }
+          - { name: dind-sock, mountPath: /var/run }
+        resources:
+          requests: { cpu: 100m, memory: 256Mi }
+          limits: { memory: 2Gi }
+    volumes:
+      - name: cache
+        persistentVolumeClaim:
+          claimName: plantain-build-cache
+      - name: dind-sock
+        emptyDir: {}
+      - name: dind-externals
+        emptyDir: {}
