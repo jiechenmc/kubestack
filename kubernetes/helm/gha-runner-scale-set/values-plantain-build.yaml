@@ -27,6 +27,15 @@ template:
         command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
         volumeMounts:
           - { name: dind-externals, mountPath: /home/runner/tmpDir }
+      # the volume's work/ subPath is created root-owned; the runner runs as
+      # uid 1001. Not fsGroup: that would re-own docker's layer store too.
+      - name: init-work-owner
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["chown", "1001:1001", "/home/runner/_work"]
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+          - { name: cache, mountPath: /home/runner/_work, subPath: work }
       # native sidecar: starts before the runner, stopped after it
       - name: dind
         image: docker:dind
