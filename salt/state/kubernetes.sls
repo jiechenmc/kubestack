@@ -78,12 +78,14 @@ kubectl_service:
 firewall_pod_cidr:
   cmd.run:
     - name: firewall-cmd --permanent --zone=trusted --add-source={{ pillar['pod_cidr'] }}
-    - unless: firewall-cmd --zone=trusted --list-sources | grep {{ pillar['pod_cidr'] }}
+    - onlyif: systemctl is-active --quiet firewalld
+    - unless: firewall-cmd --zone=trusted --list-sources | grep -qF {{ pillar['pod_cidr'] }}
 
 firewall_service_cidr:
   cmd.run:
     - name: firewall-cmd --permanent --zone=trusted --add-source={{ pillar['service_cidr'] }}
-    - unless: firewall-cmd --zone=trusted --list-sources | grep {{ pillar['service_cidr'] }}
+    - onlyif: systemctl is-active --quiet firewalld
+    - unless: firewall-cmd --zone=trusted --list-sources | grep -qF {{ pillar['service_cidr'] }}
 
 firewall_lan_to_pods:
   cmd.run:
@@ -92,11 +94,13 @@ firewall_lan_to_pods:
         firewall-cmd --permanent --policy lan-to-pods --add-ingress-zone public
         firewall-cmd --permanent --policy lan-to-pods --add-egress-zone ANY
         firewall-cmd --permanent --policy lan-to-pods --add-rich-rule 'rule family="ipv4" destination address="{{ pillar['pod_cidr'] }}" accept'
+    - onlyif: systemctl is-active --quiet firewalld
     - unless: firewall-cmd --permanent --info-policy lan-to-pods
 
 firewall_reload:
   cmd.run:
     - name: firewall-cmd --reload
+    - onlyif: systemctl is-active --quiet firewalld
     - onchanges:
       - cmd: firewall_pod_cidr
       - cmd: firewall_service_cidr

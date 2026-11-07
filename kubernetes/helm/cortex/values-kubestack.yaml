@@ -19,9 +19,10 @@ config:
   query_range:
     # results cache needs memcached, which is disabled
     cache_results: false
+    split_queries_by_interval: 0
   limits:
-    # compactor deletes blocks older than 30 days from the bucket
     compactor_blocks_retention_period: 720h
+    max_outstanding_requests_per_tenant: 1000 # default 100; this is the 429
 
 # kube-prometheus-stack already provides rule evaluation and alertmanager
 alertmanager:
@@ -34,7 +35,7 @@ distributor:
   serviceMonitor:
     enabled: true
 querier:
-  replicas: 1
+  replicas: 5
   serviceMonitor:
     enabled: true
   env: &s3Env
