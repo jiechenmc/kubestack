@@ -56,6 +56,31 @@ spec:
 apiVersion: secrets.infisical.com/v1alpha1
 kind: InfisicalSecret
 metadata:
+  name: mc-secrets
+  namespace: default
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: kubestack-ke-j0
+        envSlug: prod # "Production"
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: mc-secrets
+      secretNamespace: default
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          CF_API_KEY: "{{ .CF_API_KEY.Value }}"
+---
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
   name: ghcr
   namespace: default
 spec:
