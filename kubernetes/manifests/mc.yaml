@@ -52,10 +52,10 @@ spec:
                   key: CF_API_KEY
           resources:
             requests:
-              memory: 10Gi
-              cpu: "2"
+              memory: 16Gi
+              cpu: "4"
             limits:
-              memory: 12Gi
+              memory: 16Gi
           volumeMounts:
             - name: data
               mountPath: /data
