@@ -27,6 +27,7 @@ spec:
       labels:
         app: mc
     spec:
+      enableServiceLinks: false
       terminationGracePeriodSeconds: 120 # time to save the world on shutdown
       containers:
         - name: mc
