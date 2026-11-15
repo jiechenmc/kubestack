@@ -23,6 +23,17 @@ configs:
         end
       end
       return hs
+    # operators (cnpg, rook, ...) inject their own ca into webhooks and crd conversion at runtime;
+    # without these the apps show OutOfSync forever
+    resource.customizations.ignoreDifferences.admissionregistration.k8s.io_MutatingWebhookConfiguration: |
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
+    resource.customizations.ignoreDifferences.admissionregistration.k8s.io_ValidatingWebhookConfiguration: |
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
+    resource.customizations.ignoreDifferences.apiextensions.k8s.io_CustomResourceDefinition: |
+      jqPathExpressions:
+        - '.spec.conversion.webhook.clientConfig.caBundle'
   params:
     # tls terminates at traefik (*.home.arpa), the server serves plain http behind it
     server.insecure: true

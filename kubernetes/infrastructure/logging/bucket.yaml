@@ -1,0 +1,13 @@
+# rook creates the bucket plus a loki-bucket Secret/ConfigMap with its s3 credentials and endpoint.
+# the bucket storage class reclaims with Delete, so argo must never delete this claim
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: loki-bucket
+  namespace: logging
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  bucketName: loki
+  storageClassName: rook-ceph-bucket

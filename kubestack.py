@@ -24,7 +24,6 @@ SALT_MANAGED_CHARTS = {
     "tempo",
     "opentelemetry-collector",
     "loki",
-    "snapshot-controller",
     "metrics-server",
     "secrets-operator",
     "gha-runner-scale-set-controller",

@@ -1,6 +1,6 @@
 # kubestack overrides for tempo (chart defaults stay in values.yaml)
 # chart: grafana-community/tempo (single binary); the grafana/tempo chart is deprecated
-# traces in the ceph rgw bucket from the "tempo-bucket" ObjectBucketClaim (salt state tracing)
+# traces in the ceph rgw bucket from the "tempo-bucket" ObjectBucketClaim (kubernetes/infrastructure/tracing)
 
 tempo:
   reportingEnabled: false

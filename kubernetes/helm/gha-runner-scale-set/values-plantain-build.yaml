@@ -5,7 +5,7 @@
 # the job workspace can live on a persistent volume: the ~7GB Unity image and
 # the project's Library/ import cache survive between jobs, and the steps that
 # make GitHub-hosted builds slow (disk cleanup, image pull, full reimport) go
-# away. Installed by the github_runners salt state; the volume and token are in
+# away. Synced by argo cd (kubernetes/argocd/apps); the volume and token are in
 # kubernetes/manifests/github-runners.yaml.
 #
 # The dind sidecar is privileged (root on the node), and repo-level runners

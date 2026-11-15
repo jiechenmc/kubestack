@@ -31,18 +31,8 @@ hubble_metrics:
   - flow:sourceContext=reserved-identity;destinationContext=reserved-identity
   - port-distribution:destinationContext=reserved-identity
   - policy:sourceContext=reserved-identity;destinationContext=reserved-identity
-cnpg_chart: /root/kubestack/kubernetes/helm/cloudnative-pg
 kps_chart: /root/kubestack/kubernetes/helm/kube-prometheus-stack
-cortex_chart: /root/kubestack/kubernetes/helm/cortex
-tempo_chart: /root/kubestack/kubernetes/helm/tempo
-otelcol_chart: /root/kubestack/kubernetes/helm/opentelemetry-collector
-loki_chart: /root/kubestack/kubernetes/helm/loki
-metrics_server_chart: /root/kubestack/kubernetes/helm/metrics-server
-infisical_operator_chart: /root/kubestack/kubernetes/helm/secrets-operator
-arc_controller_chart: /root/kubestack/kubernetes/helm/gha-runner-scale-set-controller
-arc_scale_set_chart: /root/kubestack/kubernetes/helm/gha-runner-scale-set
-github_runners_manifest: /root/kubestack/kubernetes/manifests/github-runners.yaml
-# argo cd bootstrap; ceph (rook, csi drivers, snapshot-controller, cluster) is synced by argo from
-# kubernetes/argocd/apps and kubernetes/infrastructure/ceph, not configured in this pillar
+# argo cd bootstrap; every other add-on is synced by argo from kubernetes/argocd/apps,
+# not configured in this pillar
 argocd_chart: /root/kubestack/kubernetes/helm/argo-cd
 argocd_root_app: /root/kubestack/kubernetes/argocd/root.yaml

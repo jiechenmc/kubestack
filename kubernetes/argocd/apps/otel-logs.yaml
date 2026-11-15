@@ -1,0 +1,33 @@
+# otel collector daemonset tailing pod logs into loki
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-logs
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/jiechenmc/kubestack.git
+      targetRevision: main
+      path: kubernetes/helm/opentelemetry-collector
+      helm:
+        releaseName: otel-logs
+        valueFiles:
+          - values-logs.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: logging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m

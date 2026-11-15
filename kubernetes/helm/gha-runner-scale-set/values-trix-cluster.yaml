@@ -1,7 +1,7 @@
 # Runner scale set "trix-cluster": self-hosted GitHub Actions runners for
 # jiechenmc/trix's PR previews (`runs-on: trix-cluster`). In-cluster because
 # GitHub's hosted runners can't reach a home cluster; runner pods are created
-# per job and removed after. Installed by the github_runners salt state;
+# per job and removed after. Synced by argo cd (kubernetes/argocd/apps);
 # permissions in kubernetes/manifests/github-runners.yaml.
 githubConfigUrl: https://github.com/jiechenmc/trix
 # Pre-defined secret with `github_token` (synced from Infisical).

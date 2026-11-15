@@ -4,7 +4,7 @@
 
 telemetry:
   serviceMonitor:
-    # metrics are behind authn/authz: the salt state binds the chart's metrics-reader clusterrole
+    # metrics are behind authn/authz: kubernetes/infrastructure/infisical binds the chart's metrics-reader clusterrole
     # to kube-prometheus-stack's prometheus service account
     enabled: true
 

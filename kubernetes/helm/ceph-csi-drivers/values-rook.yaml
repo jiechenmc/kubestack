@@ -34,14 +34,14 @@ drivers:
     # Set snapshotPolicy to enable snapshot/group snapshot support.
     # If unset/none, the csi-snapshotter sidecar is not deployed.
     # Valid values: none, volumeSnapshot, volumeGroupSnapshot.
-    snapshotPolicy: volumeSnapshot # needs the snapshot-controller argo app
+    snapshotPolicy: none # no snapshot-controller in this cluster; set volumeSnapshot after adding it back
   cephfs:
     enabled: true
     name: rook-ceph.cephfs.csi.ceph.com # csi-provisioner-name
     log:
       rotation:
         enabled: false
-    snapshotPolicy: volumeSnapshot
+    snapshotPolicy: none
   nfs:
     enabled: false
     name: rook-ceph.nfs.csi.ceph.com # csi-provisioner-name

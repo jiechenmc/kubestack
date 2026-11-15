@@ -1,6 +1,6 @@
 # kubestack overrides for cortex (chart defaults stay in values.yaml)
 # single node: one replica per component, replication factor 1, blocks in the ceph rgw bucket
-# from the "cortex-bucket" ObjectBucketClaim (salt state cortex_bucket)
+# from the "cortex-bucket" ObjectBucketClaim (kubernetes/infrastructure/cortex)
 
 config:
   ingester:

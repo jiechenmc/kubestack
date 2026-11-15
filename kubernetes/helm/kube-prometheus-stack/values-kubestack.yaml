@@ -17,7 +17,7 @@ prometheus:
     enableRemoteWriteReceiver: true
     # short local window; cortex keeps 30 days (remoteWrite below)
     retention: 2d
-    # long-term copy of every sample in cortex (salt state cortex)
+    # long-term copy of every sample in cortex (argo cd app cortex)
     remoteWrite:
       - url: http://cortex-nginx.cortex.svc/api/v1/push
   ingress:
