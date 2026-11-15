@@ -4,6 +4,11 @@
 # otlp gateway in tracing -> tempo. traefik also forwards traceparent, so instrumented backends
 # (e.g. trix) continue the same trace
 tracing:
+  # requests through the cloudflare tunnel arrive from the cloudflared pod, so client.address is that
+  # pod; cloudflare puts the real visitor ip in this header (span attribute
+  # http.request.header.cf-connecting-ip)
+  capturedRequestHeaders:
+    - Cf-Connecting-Ip
   otlp:
     enabled: true
     grpc:
