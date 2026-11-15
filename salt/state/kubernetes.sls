@@ -164,6 +164,20 @@ remove_setroubleshoot:
       - setroubleshoot-server
       - setroubleshoot-plugins
 
+# hostPath for the otel-logs agent's filelog checkpoints. the collector runs as root, but selinux
+# still only lets containers write container_file_t paths (a plain mkdir gets container_var_lib_t)
+otelcol_storage_dir:
+  file.directory:
+    - name: /var/lib/otelcol
+    - user: root
+    - group: root
+    - mode: "0755"
+  cmd.run:
+    - name: chcon -R -t container_file_t /var/lib/otelcol
+    - unless: ls -dZ /var/lib/otelcol | grep -q container_file_t
+    - require:
+      - file: otelcol_storage_dir
+
 add_autocomplete_to_zshrc:
   file.append:
     - name: {{ home }}/.zshrc
@@ -231,6 +245,15 @@ kube_vip:
       - cmd: kubeadm_join
 {%- endif %}
 
+# right after a join the kubelet can register the new static pod without ever starting it
+# (mirror pod stuck Pending, no sandbox); a restart makes it re-read its manifests cleanly.
+# running static pods (etcd, api server) keep running across the restart
+kube_vip_kubelet_restart:
+  cmd.run:
+    - name: systemctl restart kubelet
+    - onchanges:
+      - file: kube_vip
+
 # control-plane nodes run workloads too (no dedicated workers)
 control_plane_untaint:
   cmd.run:
@@ -258,6 +281,7 @@ kubeadm_join_reset:
   cmd.run:
     - name: |
         kubeadm reset -f --cri-socket={{ crio_socket }}
+        umount /var/run/cilium/cgroupv2 2>/dev/null || true
         rm -rf /etc/cni/net.d/* /var/lib/cni /var/run/cilium
         ip link delete cilium_host 2>/dev/null || true
         ip link delete cilium_vxlan 2>/dev/null || true
@@ -311,6 +335,7 @@ kubeadm_reset:
   cmd.run:
     - name: |
         kubeadm reset -f --cri-socket=unix:///var/run/crio/crio.sock
+        umount /var/run/cilium/cgroupv2 2>/dev/null || true
         rm -rf /etc/cni/net.d/* /var/lib/cni /var/run/cilium
         ip link delete cilium_host 2>/dev/null || true
         ip link delete cilium_vxlan 2>/dev/null || true
