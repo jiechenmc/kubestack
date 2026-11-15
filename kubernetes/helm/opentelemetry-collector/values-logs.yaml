@@ -16,6 +16,12 @@ presets:
   # pod, namespace, deployment, node on every log record
   kubernetesAttributes:
     enabled: true
+  # per-node metrics, sent to clickstack only: pod/container cpu, memory, fs, network from the kubelet,
+  # and the node's own cpu, memory, disk, network
+  kubeletMetrics:
+    enabled: true
+  hostMetrics:
+    enabled: true
 
 # ingestion key for otlphttp/clickstack; optional, so the collector starts without it (clickstack
 # then rejects, loki/tempo are unaffected). infisical restarts the pods when the secret changes
@@ -31,6 +37,10 @@ annotations:
 
 config:
   receivers:
+    # kubeadm kubelets serve a self-signed cert without the node ip in it; the preset's receiver
+    # still authenticates with the serviceaccount token
+    kubeletstats:
+      insecure_skip_verify: true
     otlp: null
     jaeger: null
     zipkin: null
@@ -136,7 +146,11 @@ config:
   service:
     pipelines:
       traces: null
-      metrics: null
+      # node and pod metrics for clickstack only (grafana has prometheus/cortex)
+      metrics:
+        receivers: [] # kubeletstats and hostmetrics are added by their presets
+        processors: [memory_limiter, batch]
+        exporters: [otlphttp/clickstack]
       logs:
         receivers: [] # filelog is added by the logsCollection preset
         processors: [memory_limiter, transform/clean, filter/empty, transform/severity, batch]
