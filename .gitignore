@@ -5,3 +5,5 @@
 .env
 secret.yaml
 secrets.yaml
+# vendored helm charts ship templates named secret.yaml; they hold no secrets and argo cd needs them
+!kubernetes/helm/**/secret.yaml
