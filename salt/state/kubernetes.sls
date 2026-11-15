@@ -382,6 +382,9 @@ add_cilium_repo:
 
 # MTU=1500: otherwise cilium uses the smallest host device mtu (tailscale0: 1280), leaving pods at 1230,
 # too small for quic's 1280-byte packets (cloudflared quic handshakes timed out)
+# socketLB.hostNamespaceOnly=true: socket lb translates service ips only for host processes; pods get
+# per-packet translation instead. kubevirt vms (masquerade) send from inside the vm, not from a pod
+# socket, so with socket lb in pods every clusterip (dns, apiserver) timed out from the vm
 # routingMode=native: no vxlan encapsulation (pods get the full 1500 mtu instead of 1450); pod cidr is
 # routed directly, autoDirectNodeRoutes adds node-to-node pod routes once more nodes share this lan
 install_cilium:
@@ -407,7 +410,7 @@ install_cilium:
           --set hubble.ui.ingress.enabled=true \
           --set hubble.ui.ingress.className=traefik \
           --set-json 'hubble.ui.ingress.hosts=["hubble.home.arpa"]' \
-          --set socketLB.hostNamespaceOnly=false \
+          --set socketLB.hostNamespaceOnly=true \
           --set l2announcements.enabled=true \
           --set externalIPs.enabled=true \
           --set k8sClientRateLimit.qps=20 \
