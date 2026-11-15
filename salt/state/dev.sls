@@ -31,6 +31,24 @@ install_virtctl:
         chmod 755 /usr/local/bin/virtctl
     - unless: /usr/local/bin/virtctl version --client 2>/dev/null | grep -q 'GitVersion:"{{ pillar['virtctl_version'] }}"'
 
+# packer builds vm images (packer/); xorriso makes the cloud-init seed iso it boots them with
+install_packer:
+  pkg.installed:
+    - pkgs:
+      - xorriso
+      - unzip
+  cmd.run:
+    - name: |
+        set -e
+        tmp=$(mktemp -d)
+        cd $tmp
+        curl -fsSLO https://releases.hashicorp.com/packer/{{ pillar['packer_version'] }}/packer_{{ pillar['packer_version'] }}_linux_amd64.zip
+        curl -fsSLO https://releases.hashicorp.com/packer/{{ pillar['packer_version'] }}/packer_{{ pillar['packer_version'] }}_SHA256SUMS
+        grep linux_amd64.zip packer_{{ pillar['packer_version'] }}_SHA256SUMS | sha256sum -c -
+        unzip -o packer_{{ pillar['packer_version'] }}_linux_amd64.zip packer -d /usr/local/bin
+        rm -rf $tmp
+    - unless: /usr/local/bin/packer version 2>/dev/null | grep -q 'Packer v{{ pillar['packer_version'] }}$'
+
 install_oh_my_zsh:
   cmd.run:
     - name: 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'

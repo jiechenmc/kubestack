@@ -1,0 +1,6 @@
+# golden vm disks (DataVolumes uploaded with virtctl image-upload, e.g. packer/rocky10); vms in any
+# namespace clone their root disk from here
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vm-images
