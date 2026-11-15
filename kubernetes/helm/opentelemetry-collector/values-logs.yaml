@@ -23,6 +23,23 @@ config:
     jaeger: null
     zipkin: null
     prometheus: null # own metrics are scraped by the ServiceMonitor instead
+    filelog:
+      # replaces the preset's operator list, so its container parser is restated first
+      operators:
+        - type: container
+          id: container-parser
+          max_log_size: 102400
+        # join continuation lines onto the entry they belong to (per log file, so containers never mix):
+        # indented lines (stack traces, wrapped output), ceph-csi "#1: ..." error details, java "Caused by:".
+        # without this each continuation is its own loki entry with no level ("unknown")
+        - type: recombine
+          id: recombine-continuations
+          combine_field: body
+          combine_with: "\n"
+          source_identifier: attributes["log.file.path"]
+          is_first_entry: 'body matches "^\\S" and not (body matches "^#\\d+: ") and not (body matches "^Caused by: ")'
+          force_flush_period: 2s
+          max_log_size: 102400
   processors:
     # set severity on plain-text formats loki can't detect on its own (it already reads level= / "level":)
     transform/severity:
@@ -50,6 +67,10 @@ config:
             - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "^\\S+ - \\S+ \\[[^\\]]+\\] +(\"[^\"]*\" )?5\\d\\d ")
             - set(severity_text, "WARN") where severity_text == "" and IsMatch(body, "^\\S+ - \\S+ \\[[^\\]]+\\] +(\"[^\"]*\" )?4\\d\\d ")
             - set(severity_text, "INFO") where severity_text == "" and IsMatch(body, "^\\S+ - \\S+ \\[[^\\]]+\\] ")
+            # anything still without a level: guess from wording, otherwise info (never "unknown")
+            - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "(?i)\\b(error|errors|err|fail|failed|failure|fatal|panic|exception)\\b")
+            - set(severity_text, "WARN") where severity_text == "" and IsMatch(body, "(?i)\\b(warn|warning|deprecated)\\b")
+            - set(severity_text, "INFO") where severity_text == ""
             # matching severity_number so any otlp consumer sees the same level
             - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_text == "DEBUG"
             - set(severity_number, SEVERITY_NUMBER_INFO) where severity_text == "INFO"
