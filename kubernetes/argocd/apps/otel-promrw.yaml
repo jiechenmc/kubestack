@@ -1,0 +1,33 @@
+# prometheus remote write 2.0 -> otlp -> clickstack (selected prometheus jobs for hyperdx)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-promrw
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/jiechenmc/kubestack.git
+      targetRevision: main
+      path: kubernetes/helm/opentelemetry-collector
+      helm:
+        releaseName: otel-promrw
+        valueFiles:
+          - values-promrw.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tracing
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m
