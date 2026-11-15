@@ -28,3 +28,8 @@ spec:
       value: none
     - name: OTEL_LOGS_EXPORTER
       value: none
+  nodejs:
+    env:
+      # skip the cloud detectors (gcp/aws/azure): off-cloud they only log MetadataLookupWarning
+      - name: OTEL_NODE_RESOURCE_DETECTORS
+        value: env,host,os,process,serviceinstance,container
