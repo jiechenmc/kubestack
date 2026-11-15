@@ -1,0 +1,31 @@
+# pi-hole: lan dns, answers *.home.arpa with traefik's address
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pihole
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/jiechenmc/kubestack.git
+      targetRevision: main
+      path: kubernetes/manifests
+      directory:
+        include: 'pihole.yaml'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pihole
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m

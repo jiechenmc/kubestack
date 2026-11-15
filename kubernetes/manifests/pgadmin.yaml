@@ -41,6 +41,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: pgadmin
   namespace: pgadmin
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false # never deleted by argo cd
 spec:
   accessModes: [ReadWriteOnce]
   resources:

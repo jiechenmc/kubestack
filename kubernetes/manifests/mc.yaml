@@ -3,6 +3,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: mc-data
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false # never deleted by argo cd
 spec:
   accessModes: ["ReadWriteOnce"]
   storageClassName: rook-ceph-block

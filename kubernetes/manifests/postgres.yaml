@@ -2,6 +2,8 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: pg
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false # never deleted by argo cd
 spec:
   # single node: one instance; raise to 3 (primary + 2 replicas) once there are more nodes
   instances: 3

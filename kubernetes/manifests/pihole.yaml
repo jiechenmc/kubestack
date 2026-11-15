@@ -19,6 +19,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: pihole
   namespace: pihole
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false # never deleted by argo cd
 spec:
   accessModes: [ReadWriteOnce]
   resources:
