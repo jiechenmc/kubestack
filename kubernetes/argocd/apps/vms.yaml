@@ -1,0 +1,32 @@
+# kubevirt vms (kubernetes/manifests/vms.yaml)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vms
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/jiechenmc/kubestack.git
+      targetRevision: main
+      path: kubernetes/manifests
+      directory:
+        include: 'vms.yaml'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vms
+  syncPolicy:
+    automated:
+      # removing a vm from the file must not delete it and its disk; delete by hand
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m

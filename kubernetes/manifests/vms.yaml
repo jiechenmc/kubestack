@@ -1,0 +1,75 @@
+# kubevirt vms. root disks clone vm-images/rocky-10 (packer/rocky10), cloud-init adds the ssh keys;
+# log in as rocky. ssh rocky@10.144.138.211 from the lan, or virtctl ssh -n vms rocky@vm/rocky-1
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rocky-1
+  namespace: vms
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: rocky-1-root
+      spec:
+        source:
+          pvc:
+            namespace: vm-images
+            name: rocky-10
+        storage:
+          storageClassName: rook-ceph-block
+          accessModes: [ReadWriteOnce]
+          volumeMode: Block
+          resources:
+            requests:
+              storage: 20Gi
+  template:
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: root
+              disk:
+                bus: virtio
+            - name: cloudinit
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: root
+          dataVolume:
+            name: rocky-1-root
+        - name: cloudinit
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              hostname: rocky-1
+              ssh_authorized_keys:
+                - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDI6DF8axrkCa5hpn7x7Sk1VHOxNZYTZDEnXC8UOwZei6KN2owb/3ZbvBdHQLcLaXJqKAaoMeA0vI9bpPyn0B6gsal5XUfZk24v2GhV+hg7DJRCTu8HSg7J+qsU6ttpSreA4ubzFY/evyHx4UHqYITZdiub4TFYSWU6T5X5d0JOn1N0uKWODk+zH3lr2wAVByjrTHYnKmlNWSK/xctFGtqEbqrglBD/PxgMOHKW89zDpGY0Srrk3MIVcRFA4L5vpQxZZ4SKGhtB/sfxPh4/LcIYBUd0+2wg7ANvL02XwXHgz+KGFnXYGkBkhGBv0hE9bFYwRaaQ4BDFdWyM4WGHm/B8KRNm1mq/I0F1uxRGUcAwiY8sKOmTmlAfhmj2X4tTSSIqHc820fLVPpJLWmjEEvsQabnCJwMkDfYoonKp+DqtYOAt+vb/Pmp/Qm7KvrRoscwLZvRNsRp+fjVFhRmab+5j25gk5/77f4OqxdSrAPK5QOzgJMEUYaOuEaIabP6X8q8= chenj7728@MacBook-Air.lan
+                - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIUuPjQm6PMxW7KZftSnpAbRPYTOLV8FuUlO9OThLlDR chenj7728@DESKTOP-LKJ3I25
+                - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIII5F3XkpAZ4CYZSBRN7o/W1KfGiuP8RJ3kKYSjDK0He root@localhost.localdomain
+---
+# ssh from the lan on a fixed address (cilium lb pool 10.144.138.200-220)
+apiVersion: v1
+kind: Service
+metadata:
+  name: rocky-1-ssh
+  namespace: vms
+  annotations:
+    lbipam.cilium.io/ips: "10.144.138.211"
+spec:
+  type: LoadBalancer
+  selector:
+    vm.kubevirt.io/name: rocky-1
+  ports:
+    - name: ssh
+      port: 22
+      targetPort: 22
