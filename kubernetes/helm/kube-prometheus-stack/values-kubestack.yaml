@@ -50,6 +50,8 @@ kubeProxy:
   enabled: false
 
 grafana:
+  # the chart's ~25 kubernetes-mixin dashboards; replaced by the short list under dashboards below
+  defaultDashboardsEnabled: false
   # helm test hooks; argo cd doesn't run helm tests
   testFramework:
     enabled: false
@@ -119,21 +121,64 @@ grafana:
     hosts:
       - grafana.home.arpa
     path: /
+  # the only dashboards provisioned (plus CloudNativePG from the cnpg chart); all from grafana.com.
+  # anything else: explore, logs drilldown, hubble ui (hubble.home.arpa), ceph dashboard (ceph.home.arpa)
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
       providers:
-        - name: default
+        - name: kubernetes
+          orgId: 1
+          folder: Kubernetes
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/kubernetes
+        - name: nodes
           orgId: 1
           folder: Nodes
           type: file
           disableDeletion: false
           editable: true
           options:
-            path: /var/lib/grafana/dashboards/default
+            path: /var/lib/grafana/dashboards/nodes
+        - name: storage
+          orgId: 1
+          folder: Storage
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/storage
   dashboards:
-    default:
+    kubernetes:
+      # cluster-wide cpu/memory/network/storage, then drill down
+      k8s-views-global:
+        gnetId: 15757
+        revision: 43
+        datasource: Prometheus
+      k8s-views-namespaces:
+        gnetId: 15758
+        revision: 46
+        datasource: Prometheus
+      k8s-views-nodes:
+        gnetId: 15759
+        revision: 40
+        datasource: Prometheus
+      k8s-views-pods:
+        gnetId: 15760
+        revision: 41
+        datasource: Prometheus
+    nodes:
+      # host-level detail: disks, filesystems, network interfaces, temperatures
       node-exporter-full:
         gnetId: 1860
         revision: 45
+        datasource: Prometheus
+    storage:
+      # health, capacity, iops and latency from the ceph mgr prometheus module
+      ceph-cluster:
+        gnetId: 2842
+        revision: 18
         datasource: Prometheus

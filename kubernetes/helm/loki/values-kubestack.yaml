@@ -75,5 +75,6 @@ test:
 monitoring:
   serviceMonitor:
     enabled: true
+  # loki's own operational dashboards are off; read logs in grafana's logs drilldown / explore
   dashboards:
-    enabled: true
+    enabled: false

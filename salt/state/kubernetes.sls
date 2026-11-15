@@ -421,10 +421,7 @@ install_cilium:
           --set hubble.metrics.serviceMonitor.enabled=true \
           --set envoy.prometheus.serviceMonitor.enabled=true \
           --set hubble.metrics.enableOpenMetrics=true \
-          --set-json 'hubble.metrics.enabled={{ pillar['hubble_metrics'] | tojson }}' \
-          --set dashboards.enabled=true \
-          --set hubble.metrics.dashboards.enabled=true \
-          --set operator.dashboards.enabled=true
+          --set-json 'hubble.metrics.enabled={{ pillar['hubble_metrics'] | tojson }}'
     - require:
       - cmd: add_cilium_repo
       - cmd: prometheus_operator_crds
