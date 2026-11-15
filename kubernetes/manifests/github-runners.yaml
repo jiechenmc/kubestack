@@ -77,7 +77,8 @@ metadata:
   name: trix-runner-github
   namespace: arc-runners
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:
@@ -157,7 +158,8 @@ metadata:
   name: plantain-runner-github
   namespace: arc-runners
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:

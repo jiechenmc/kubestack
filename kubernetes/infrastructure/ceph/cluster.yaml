@@ -5,7 +5,8 @@ metadata:
   name: rook-ceph-dashboard-password
   namespace: rook-ceph
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:

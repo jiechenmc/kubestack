@@ -13,7 +13,8 @@ metadata:
   name: pihole
   namespace: pihole
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:

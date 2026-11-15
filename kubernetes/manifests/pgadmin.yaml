@@ -12,7 +12,8 @@ metadata:
   name: pgadmin
   namespace: pgadmin
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:

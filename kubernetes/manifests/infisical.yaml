@@ -6,7 +6,8 @@ metadata:
   name: trix
   namespace: default
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:
@@ -33,7 +34,8 @@ metadata:
   name: tunnel-token
   namespace: default
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:
@@ -59,7 +61,8 @@ metadata:
   name: mc-secrets
   namespace: default
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:
@@ -84,7 +87,8 @@ metadata:
   name: ghcr
   namespace: default
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:
@@ -111,7 +115,8 @@ metadata:
   name: grafana-admin
   namespace: monitoring
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:
@@ -138,7 +143,8 @@ metadata:
   name: trix-api
   namespace: default
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:
@@ -164,7 +170,8 @@ metadata:
   name: trix-web
   namespace: default
 spec:
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       credentialsRef:
