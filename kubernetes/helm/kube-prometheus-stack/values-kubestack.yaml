@@ -55,6 +55,13 @@ alertmanager:
         discord_configs:
           - webhook_url_file: /etc/alertmanager/secrets/alertmanager-discord/webhook-url
             send_resolved: true
+            # one line per alert (its description) instead of the default label/annotation dump
+            title: >-
+              {{ if eq .Status "firing" }}🔥 {{ or .CommonLabels.alertname (printf "%d alerts" (len .Alerts.Firing)) }}{{ else }}✅ Resolved{{ end }}
+            message: |-
+              {{ range .Alerts.Firing }}• {{ or .Annotations.description .Annotations.summary .Labels.alertname }}
+              {{ end }}{{ range .Alerts.Resolved }}✅ {{ .Labels.alertname }}{{ with .Labels.namespace }} · {{ . }}{{ end }}{{ with .Labels.persistentvolumeclaim }}/{{ . }}{{ end }}{{ with .Labels.pod }}/{{ . }}{{ end }} resolved
+              {{ end }}
   ingress:
     enabled: true
     ingressClassName: traefik
