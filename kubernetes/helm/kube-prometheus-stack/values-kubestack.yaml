@@ -20,6 +20,9 @@ prometheus:
     # long-term copy of every sample in cortex (argo cd app cortex)
     remoteWrite:
       - url: http://cortex-nginx.cortex.svc/api/v1/push
+        queueConfig:
+          # back off and resend on cortex 429s instead of dropping the samples
+          retryOnRateLimit: true
   ingress:
     enabled: true
     ingressClassName: traefik

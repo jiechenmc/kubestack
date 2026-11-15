@@ -22,6 +22,11 @@ config:
     split_queries_by_interval: 0
   limits:
     compactor_blocks_retention_period: 720h
+    # single tenant (prometheus): defaults are 25k samples/s with a 50k burst, and prometheus catching
+    # up after any hiccup sends 2000-sample batches back to back, tripping it (429, samples dropped).
+    # steady state is ~9-10k/s; leave plenty of headroom
+    ingestion_rate: 100000
+    ingestion_burst_size: 400000
     max_outstanding_requests_per_tenant: 1000 # default 100; this is the 429
 
 # kube-prometheus-stack already provides rule evaluation and alertmanager
