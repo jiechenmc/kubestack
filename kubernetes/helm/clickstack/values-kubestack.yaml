@@ -22,6 +22,15 @@ hyperdx:
   # them by name every 30s. removing a file does not delete its dashboard; delete it in the ui
   dashboards:
     enabled: true
+    # the chart's 50m/64Mi starves the python watcher: oom-killed on startup, then cpu-throttled
+    # so hard it never got as far as writing the dashboard files
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
   # the dashboard watcher's configmap rbac binds to this serviceaccount
   serviceAccount:
     create: true
