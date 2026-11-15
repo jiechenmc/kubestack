@@ -1,0 +1,16 @@
+# kubestack overrides for opentelemetry-operator (chart defaults stay in values.yaml)
+# used for zero-code instrumentation: pods annotated instrumentation.opentelemetry.io/inject-<lang>
+# get the language's otel agent injected, configured by the Instrumentation in
+# kubernetes/infrastructure/tracing/instrumentation.yaml
+
+manager:
+  serviceMonitor:
+    enabled: true
+
+admissionWebhooks:
+  # cert-manager issues the webhook cert; the chart's own generated cert changes on every render,
+  # which argo cd would show as a permanent diff
+  certManager:
+    enabled: true
+  autoGenerateCert:
+    enabled: false

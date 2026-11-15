@@ -1,0 +1,12 @@
+# kubestack overrides for traefik, layered on values.yaml
+
+# a span for every request through the ingress (*.home.arpa, the cloudflare tunnel), sent to the
+# otlp gateway in tracing -> tempo. traefik also forwards traceparent, so instrumented backends
+# (e.g. trix) continue the same trace
+tracing:
+  otlp:
+    enabled: true
+    grpc:
+      enabled: true
+      endpoint: otel-collector.tracing.svc:4317
+      insecure: true

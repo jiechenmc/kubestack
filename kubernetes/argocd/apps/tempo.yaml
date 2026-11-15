@@ -1,4 +1,4 @@
-# tempo: traces in a ceph rgw bucket
+# tempo: traces in a ceph rgw bucket, plus the otel operator's Instrumentation (kubernetes/infrastructure/tracing)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

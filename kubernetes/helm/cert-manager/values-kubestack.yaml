@@ -1,0 +1,14 @@
+# kubestack overrides for cert-manager (chart defaults stay in values.yaml)
+# issues the opentelemetry operator's webhook certificate (and anything else that needs one later)
+
+crds:
+  enabled: true
+  keep: true # keep the crds (and every Certificate) if the release is ever removed
+
+prometheus:
+  servicemonitor:
+    enabled: true
+
+# post-install helm hook that waits for the api; argo cd would rerun it as a PostSync job on every sync
+startupapicheck:
+  enabled: false

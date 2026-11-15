@@ -1,0 +1,30 @@
+# zero-code instrumentation config for the opentelemetry operator. a pod opts in per container:
+#   instrumentation.opentelemetry.io/inject-python: "tracing/default"
+#   instrumentation.opentelemetry.io/python-container-names: "api"
+# (likewise inject-nodejs / nodejs-container-names, inject-java, ...)
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: default
+  namespace: tracing
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true # crd comes from the operator app
+spec:
+  exporter:
+    endpoint: http://otel-collector.tracing.svc:4318
+  propagators:
+    - tracecontext
+    - baggage
+  sampler:
+    type: parentbased_traceidratio
+    argument: "1"
+  env:
+    # same protocol for every language (the gateway's otlp-http port)
+    - name: OTEL_EXPORTER_OTLP_PROTOCOL
+      value: http/protobuf
+    # traces only: the gateway has no metrics/logs pipelines (metrics come from prometheus, logs
+    # from the otel-logs daemonset)
+    - name: OTEL_METRICS_EXPORTER
+      value: none
+    - name: OTEL_LOGS_EXPORTER
+      value: none

@@ -16,6 +16,7 @@ spec:
         releaseName: traefik
         valueFiles:
           - values.yaml
+          - values-kubestack.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: default
