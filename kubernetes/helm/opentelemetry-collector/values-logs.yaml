@@ -41,6 +41,16 @@ config:
           force_flush_period: 2s
           max_log_size: 102400
   processors:
+    # terminal output that only makes sense on a console: colour/cursor escape codes, and the minecraft
+    # console's ">...." prompt redraw glued to the front of lines. runs before the empty-line filter so
+    # lines that were nothing but this are dropped
+    transform/clean:
+      error_mode: ignore
+      log_statements:
+        - context: log
+          statements:
+            - replace_pattern(body, "\\x1b\\[[0-9;?]*[A-Za-z]", "")
+            - replace_pattern(body, "^>\\.{2,}", "")
     # blank lines (e.g. the infisical operator prints one between messages) carry nothing
     filter/empty:
       error_mode: ignore
@@ -73,6 +83,12 @@ config:
             - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "^\\S+ - \\S+ \\[[^\\]]+\\] +(\"[^\"]*\" )?5\\d\\d ")
             - set(severity_text, "WARN") where severity_text == "" and IsMatch(body, "^\\S+ - \\S+ \\[[^\\]]+\\] +(\"[^\"]*\" )?4\\d\\d ")
             - set(severity_text, "INFO") where severity_text == "" and IsMatch(body, "^\\S+ - \\S+ \\[[^\\]]+\\] ")
+            # log4j "[hh:mm:ss] [thread/LEVEL] ..." (minecraft server and mods)
+            - set(severity_text, "DEBUG") where severity_text == "" and IsMatch(body, "^\\[[0-9:]+\\] \\[[^\\]]*/(DEBUG|TRACE)\\]")
+            - set(severity_text, "INFO") where severity_text == "" and IsMatch(body, "^\\[[0-9:]+\\] \\[[^\\]]*/INFO\\]")
+            - set(severity_text, "WARN") where severity_text == "" and IsMatch(body, "^\\[[0-9:]+\\] \\[[^\\]]*/WARN\\]")
+            - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "^\\[[0-9:]+\\] \\[[^\\]]*/ERROR\\]")
+            - set(severity_text, "FATAL") where severity_text == "" and IsMatch(body, "^\\[[0-9:]+\\] \\[[^\\]]*/FATAL\\]")
             # anything still without a level: guess from wording, otherwise info (never "unknown")
             - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "(?i)\\b(error|errors|err|fail|failed|failure|fatal|panic|exception)\\b")
             - set(severity_text, "WARN") where severity_text == "" and IsMatch(body, "(?i)\\b(warn|warning|deprecated)\\b")
@@ -93,7 +109,7 @@ config:
       metrics: null
       logs:
         receivers: [] # filelog is added by the logsCollection preset
-        processors: [memory_limiter, filter/empty, transform/severity, batch]
+        processors: [memory_limiter, transform/clean, filter/empty, transform/severity, batch]
         exporters: [otlphttp/loki]
 
 ports:
