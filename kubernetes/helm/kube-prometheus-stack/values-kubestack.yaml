@@ -341,7 +341,8 @@ grafana:
     hosts:
       - grafana.home.arpa
     path: /
-  # the only dashboards provisioned (plus CloudNativePG from the cnpg chart); all from grafana.com.
+  # the only dashboards provisioned (plus CloudNativePG from the cnpg chart); from grafana.com, except
+  # kubevirt's control-plane dashboard (github).
   # anything else: explore, logs drilldown, hubble ui (hubble.home.arpa), ceph dashboard (ceph.home.arpa)
   dashboardProviders:
     dashboardproviders.yaml:
@@ -371,6 +372,14 @@ grafana:
           editable: true
           options:
             path: /var/lib/grafana/dashboards/storage
+        - name: virtualization
+          orgId: 1
+          folder: Virtualization
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/virtualization
   dashboards:
     kubernetes:
       # cluster-wide cpu/memory/network/storage, then drill down
@@ -402,3 +411,19 @@ grafana:
         gnetId: 2842
         revision: 18
         datasource: Prometheus
+    virtualization:
+      # per vm: cpu, memory, disk iops/latency, network (current kubevirt_vmi_* metric names)
+      kubevirt-vm:
+        gnetId: 25834
+        revision: 1
+        # import inputs: datasource uid, and the host cpu clock used to turn cpu seconds into mhz
+        # (ryzen 5500u and i5-8500t both 2.1ghz base)
+        datasource:
+          - name: DS_PROMETHEUS
+            value: prometheus
+          - name: VAR_DEFAULT_CPU_FREQUENCY_MEGA_HERTZ
+            value: "2100"
+      # kubevirt's own: virt-api/controller/handler request rates, workqueues, vmi phase transitions.
+      # not on grafana.com, so pinned to a commit of github.com/kubevirt/monitoring
+      kubevirt-control-plane:
+        url: https://raw.githubusercontent.com/kubevirt/monitoring/c5980d56249dcbfa34ffa14024e0dd9b2c792ff7/dashboards/grafana/kubevirt-control-plane.json
