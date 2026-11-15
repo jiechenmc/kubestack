@@ -1,0 +1,28 @@
+# containerized data importer: fills vm disk pvcs on ceph from images (operator v1.66.1 vendored from the github release, plus the CDI cr)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cdi
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jiechenmc/kubestack.git
+    targetRevision: main
+    path: kubernetes/infrastructure/cdi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cdi
+  syncPolicy:
+    automated:
+      prune: false  # owns crds; deleting one deletes every resource of that kind (every vm / disk)
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m

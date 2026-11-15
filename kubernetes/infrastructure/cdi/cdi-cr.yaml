@@ -1,0 +1,20 @@
+# the CDI cr: cdi-operator deploys the importer/uploader that fill vm disk pvcs (DataVolumes) from
+# http, registry or virtctl image-upload. the crd comes from cdi-operator.yaml, so this applies one wave later
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: CDI
+metadata:
+  name: cdi
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  config:
+    featureGates:
+      - HonorWaitForFirstConsumer
+  imagePullPolicy: IfNotPresent
+  infra:
+    nodeSelector:
+      kubernetes.io/os: linux
+  workload:
+    nodeSelector:
+      kubernetes.io/os: linux
