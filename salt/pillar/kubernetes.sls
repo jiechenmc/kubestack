@@ -31,6 +31,7 @@ hubble_metrics:
   - flow:sourceContext=reserved-identity;destinationContext=reserved-identity
   - port-distribution:destinationContext=reserved-identity
   - policy:sourceContext=reserved-identity;destinationContext=reserved-identity
+# salt applies only this chart's prometheus-operator crds; argo cd installs the chart itself
 kps_chart: /root/kubestack/kubernetes/helm/kube-prometheus-stack
 # argo cd bootstrap; every other add-on is synced by argo from kubernetes/argocd/apps,
 # not configured in this pillar

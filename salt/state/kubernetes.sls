@@ -427,7 +427,7 @@ install_cilium:
           --set operator.dashboards.enabled=true
     - require:
       - cmd: add_cilium_repo
-      - cmd: kube_prometheus_stack
+      - cmd: prometheus_operator_crds
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 cilium_l2_announcements:
@@ -459,22 +459,21 @@ cilium_l2_announcements:
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 
-# prometheus-operator, prometheus, alertmanager, grafana, node-exporter, kube-state-metrics.
-# installed before cilium/rook/cnpg monitors so their ServiceMonitor/PodMonitor CRDs exist
-kube_prometheus_stack:
+# only the prometheus-operator crds (ServiceMonitor, PodMonitor, ...): cilium's helm release creates
+# monitors, so they must exist before it, and argo cd (which installs the rest of kube-prometheus-stack)
+# can't run until cilium does. argo cd keeps them updated after that
+prometheus_operator_crds:
   cmd.run:
-    - name: |
-        helm upgrade --install --history-max 3 kube-prometheus-stack {{ pillar['kps_chart'] }} \
-          --namespace monitoring --create-namespace \
-          --values {{ pillar['kps_chart'] }}/values-kubestack.yaml
+    - name: kubectl apply --server-side --force-conflicts -f {{ pillar['kps_chart'] }}/charts/crds/crds/
+    - unless: kubectl get crd servicemonitors.monitoring.coreos.com
     - require:
       - cmd: kubeadm_init
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 
 # argo cd: syncs every other add-on from git (kubernetes/argocd/apps). salt only bootstraps what has to
-# exist first: cilium (no pods run without a cni), kube-prometheus-stack (monitor crds the charts use),
-# argo cd itself and its root app. change the rest in git, not here
+# exist first: cilium (no pods run without a cni), the prometheus-operator crds (cilium and argo cd
+# create monitors), argo cd itself and its root app. change the rest in git, not here
 argocd:
   cmd.run:
     - name: |
@@ -485,7 +484,7 @@ argocd:
         kubectl apply -f {{ pillar['argocd_root_app'] }}
     - require:
       - cmd: install_cilium
-      - cmd: kube_prometheus_stack
+      - cmd: prometheus_operator_crds
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 

@@ -1,0 +1,35 @@
+# prometheus-operator, prometheus, alertmanager, grafana, node-exporter, kube-state-metrics.
+# wave -1: its ServiceMonitor/PodMonitor crds are used by most other apps (salt pre-applies them on a
+# fresh cluster, before cilium; this app keeps them current)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/jiechenmc/kubestack.git
+      targetRevision: main
+      path: kubernetes/helm/kube-prometheus-stack
+      helm:
+        releaseName: kube-prometheus-stack
+        valueFiles:
+          - values-kubestack.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: false  # chart owns the monitoring crds; deleting one deletes every monitor of that kind
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true # prometheus crds exceed the client-side last-applied annotation limit
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m

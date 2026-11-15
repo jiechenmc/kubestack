@@ -50,6 +50,9 @@ kubeProxy:
   enabled: false
 
 grafana:
+  # helm test hooks; argo cd doesn't run helm tests
+  testFramework:
+    enabled: false
   # login from infisical (InfisicalSecret grafana-admin in kubernetes/manifests/infisical.yaml)
   admin:
     existingSecret: grafana-admin
