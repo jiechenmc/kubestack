@@ -12,10 +12,6 @@ presets:
   # adds the k8sattributes processor (pod, namespace, deployment on every span) and its rbac
   kubernetesAttributes:
     enabled: true
-  # cluster-wide metrics (pod phases, restarts, deployment/node conditions), sent to clickstack only.
-  # here rather than in the otel-logs daemonset so they're collected once
-  clusterMetrics:
-    enabled: true
 
 # ingestion key for otlphttp/clickstack; optional, so the collector starts without it (clickstack
 # then rejects, loki/tempo are unaffected). infisical restarts the pods when the secret changes
@@ -63,11 +59,7 @@ config:
   service:
     pipelines:
       logs: null
-      # cluster-level metrics for clickstack only (grafana has prometheus/cortex)
-      metrics:
-        receivers: [] # k8s_cluster is added by the clusterMetrics preset
-        processors: [memory_limiter, batch]
-        exporters: [otlphttp/clickstack]
+      metrics: null
       traces:
         receivers: [otlp]
         processors: [memory_limiter, filter/asgi-messages, batch]

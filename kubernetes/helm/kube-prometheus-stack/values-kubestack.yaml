@@ -23,17 +23,6 @@ prometheus:
         queueConfig:
           # back off and resend on cortex 429s instead of dropping the samples
           retryOnRateLimit: true
-      # copy of a few jobs for clickstack/hyperdx, via the otel-promrw collector (remote write 2.0
-      # -> otlp). its own queue: clickstack being down never holds up cortex
-      - url: http://otel-promrw.tracing.svc:9090/api/v1/write
-        messageVersion: V2.0
-        writeRelabelConfigs:
-          - sourceLabels: [job]
-            regex: rook-ceph-mgr|rook-ceph-exporter|default/pg|cnpg-system/cnpg-cloudnative-pg|kubevirt-prometheus-metrics|cdi-prometheus-metrics
-            action: keep
-    # remote write 2.0 carries metric type/unit/help, which prometheus only keeps with this flag
-    enableFeatures:
-      - metadata-wal-records
   ingress:
     enabled: true
     ingressClassName: traefik
