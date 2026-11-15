@@ -1,0 +1,68 @@
+# rook applies this to the dashboard "admin" user on every reconcile (it only generates one if missing)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rook-ceph-dashboard-password
+  namespace: rook-ceph
+stringData:
+  password: admin
+---
+apiVersion: ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: rook-ceph
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false
+  namespace: rook-ceph
+spec:
+  cephVersion:
+    image: quay.io/ceph/ceph:v20.2.4
+  dataDirHostPath: /var/lib/rook
+  security:
+    cephx:
+      csi:
+        keyType: aes # required on kernels older than 7.0
+  mon:
+    count: 1
+    allowMultiplePerNode: true
+  mgr:
+    count: 1
+    allowMultiplePerNode: true
+    modules:
+      - name: rook
+        enabled: true
+  dashboard:
+    enabled: true
+    prometheusEndpoint: http://kube-prometheus-stack-prometheus.monitoring.svc:9090 # dashboard graphs query this
+  crashCollector:
+    disable: true
+  monitoring:
+    enabled: true # ServiceMonitors for mgr and ceph-exporter
+  healthCheck:
+    muteHealthWarning:
+      AUTH_INSECURE_ROTATING_SERVICE_KEY_TYPE:
+        policy: mute
+      AUTH_INSECURE_CLIENT_KEY_TYPE:
+        policy: mute
+      AUTH_INSECURE_KEYS_ALLOWED:
+        policy: mute
+      AUTH_INSECURE_KEYS_CREATABLE:
+        policy: mute
+  cephConfig:
+    global:
+      osd_pool_default_size: "1"
+      mon_warn_on_pool_no_redundancy: "false"
+    mgr:
+      # allow the simple dashboard password set in rook-ceph-dashboard-password
+      mgr/dashboard/PWD_POLICY_ENABLED: "false"
+    client.rgw:
+      # ceph 20 rejects sigv4 requests with unsigned headers; minio-go (cortex, tempo) never signs
+      # content-type ("'content-type' supplied but not in CanonicalHeaders"), so allow it
+      rgw_sigv4_insecure: "true"
+  storage:
+    useAllNodes: false
+    useAllDevices: false
+    nodes:
+      - name: localhost.localdomain
+        devices:
+          - name: /dev/disk/by-id/ata-T-FORCE_T253TY001T_TPBF2503200040100652

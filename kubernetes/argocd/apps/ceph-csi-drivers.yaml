@@ -1,0 +1,32 @@
+# rbd/cephfs Driver CRs for ceph-csi-operator, which runs the csi plugins
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ceph-csi-drivers
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jiechenmc/kubestack.git
+    targetRevision: main
+    path: kubernetes/helm/ceph-csi-drivers
+    helm:
+      releaseName: ceph-csi-drivers
+      valueFiles:
+        - values-rook.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rook-ceph
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m

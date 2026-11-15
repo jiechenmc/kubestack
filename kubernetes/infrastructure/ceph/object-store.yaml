@@ -1,0 +1,69 @@
+# s3-compatible object storage (rgw), single replica like the block pool
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStore
+metadata:
+  name: objectstore
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false
+  namespace: rook-ceph
+spec:
+  metadataPool:
+    failureDomain: osd
+    replicated:
+      size: 1
+      requireSafeReplicaSize: false
+  dataPool:
+    failureDomain: osd
+    replicated:
+      size: 1
+      requireSafeReplicaSize: false
+  preservePoolsOnDelete: false
+  gateway:
+    port: 80
+    instances: 1
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: rook-ceph-bucket
+provisioner: rook-ceph.ceph.rook.io/bucket
+reclaimPolicy: Delete
+parameters:
+  objectStoreName: objectstore
+  objectStoreNamespace: rook-ceph
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rook-ceph-rgw-objectstore-loadbalancer
+  namespace: rook-ceph
+spec:
+  type: LoadBalancer
+  selector:
+    app: rook-ceph-rgw
+    rook_cluster: rook-ceph
+    rook_object_store: objectstore
+  ports:
+    - name: s3
+      port: 80
+      targetPort: 8080 # rgw container port behind gateway.port 80
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: s3
+  namespace: rook-ceph
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: s3.home.arpa
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rook-ceph-rgw-objectstore
+                port:
+                  number: 80

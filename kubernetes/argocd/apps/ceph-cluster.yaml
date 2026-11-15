@@ -1,0 +1,29 @@
+# CephCluster, pools, object store, storage/snapshot classes, dashboard + s3 endpoints
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ceph-cluster
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jiechenmc/kubestack.git
+    targetRevision: main
+    path: kubernetes/infrastructure/ceph
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rook-ceph
+  syncPolicy:
+    automated:
+      # removing a file must not delete a pool or the cluster; prune by hand from the ui
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m

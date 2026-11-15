@@ -1,0 +1,20 @@
+# app of apps: salt applies this once (state argocd); every Application in kubernetes/argocd/apps is
+# synced from git after that. sync waves order the children, each waits for the previous to be healthy
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jiechenmc/kubestack.git
+    targetRevision: main
+    path: kubernetes/argocd/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

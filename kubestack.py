@@ -13,8 +13,9 @@ from pathlib import Path
 
 HELM_DIR = Path("kubernetes/helm")
 GENERATED_DIR = Path("kubernetes/generated")
-# installed as helm releases by salt (salt/state/kubernetes.sls), not rendered here
+# deployed by salt (salt/state/kubernetes.sls) or synced by argo cd (kubernetes/argocd/apps), not rendered here
 SALT_MANAGED_CHARTS = {
+    "argo-cd",
     "rook-ceph",
     "ceph-csi-drivers",
     "cloudnative-pg",
