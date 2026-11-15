@@ -41,6 +41,12 @@ config:
           force_flush_period: 2s
           max_log_size: 102400
   processors:
+    # blank lines (e.g. the infisical operator prints one between messages) carry nothing
+    filter/empty:
+      error_mode: ignore
+      logs:
+        log_record:
+          - 'IsMatch(body, "^\\s*$")'
     # set severity on plain-text formats loki can't detect on its own (it already reads level= / "level":)
     transform/severity:
       error_mode: ignore
@@ -87,7 +93,7 @@ config:
       metrics: null
       logs:
         receivers: [] # filelog is added by the logsCollection preset
-        processors: [memory_limiter, transform/severity, batch]
+        processors: [memory_limiter, filter/empty, transform/severity, batch]
         exporters: [otlphttp/loki]
 
 ports:
