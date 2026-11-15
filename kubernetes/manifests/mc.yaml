@@ -29,6 +29,10 @@ spec:
       labels:
         app: mc
     spec:
+      # ~10Gi resident (8G heap) and a 14Gi request: keep it on the 32gb optiplex, off the
+      # ceph/control-plane node. the world volume is rbd, so it follows over the network
+      nodeSelector:
+        kubernetes.io/hostname: optiplex-cnjn9t2-32gb
       enableServiceLinks: false
       terminationGracePeriodSeconds: 120 # time to save the world on shutdown
       containers:
