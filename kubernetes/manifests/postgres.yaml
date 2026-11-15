@@ -5,8 +5,21 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-options: Delete=false,Prune=false # never deleted by argo cd
 spec:
-  # single node: one instance; raise to 3 (primary + 2 replicas) once there are more nodes
+  # primary + 2 replicas
   instances: 3
+  postgresql:
+    parameters:
+      # setting any pg_stat_statements.* parameter makes cnpg preload the library and create the
+      # extension in every database. per-query totals: SELECT * FROM pg_stat_statements
+      pg_stat_statements.max: "10000"
+      pg_stat_statements.track: top
+    # a commit returns only once at least one replica has the wal on disk (synchronous_commit=on),
+    # so losing the primary can't lose acknowledged writes. "required": with no replica reachable,
+    # writes wait instead of quietly going async; switch to "preferred" if uptime matters more
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: required
   storage:
     storageClass: rook-ceph-block
     size: 5Gi
