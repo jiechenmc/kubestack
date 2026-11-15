@@ -1,0 +1,52 @@
+# clickstack: hyperdx ui (hyperdx.home.arpa) on clickhouse, run side by side with loki/tempo.
+# the otel-logs agents and the tracing gateway collector send it a copy of every log and span
+# (otlphttp/clickstack exporters); grafana/loki/tempo are untouched.
+
+hyperdx:
+  config:
+    FRONTEND_URL: http://hyperdx.home.arpa
+    USAGE_STATS_ENABLED: "false"
+    # ttl the collector puts on the otel_* tables when it creates them (first start only)
+    HYPERDX_OTEL_EXPORTER_TABLES_TTL: 168h
+  # the chart writes these into the ClickHouseCluster/MongoDBCommunity objects, so argo cd can't take
+  # them from infisical and they are readable here. only pods in the clickstack namespace can reach
+  # clickhouse and mongodb (kubernetes/infrastructure/clickstack networkpolicies), and the ui has its
+  # own accounts (created on first visit), so they open nothing from outside the namespace
+  secrets:
+    HYPERDX_API_KEY: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    CLICKHOUSE_PASSWORD: "08481b1b9cbd08d1a9f34e79f68a2ad2"
+    CLICKHOUSE_APP_PASSWORD: "70ef4afff0b67f5b3e5501c1a600272f"
+    MONGODB_PASSWORD: "e98ec19b7c011276b5378d13c5ab046e"
+  ingress:
+    enabled: true
+    spec:
+      ingressClassName: traefik
+      rules:
+        - host: hyperdx.home.arpa
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: clickstack-app
+                    port:
+                      number: 3000
+
+clickhouse:
+  cluster:
+    spec:
+      containerTemplate:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 4Gi
+          limits:
+            memory: 4Gi
+      # default storageclass (rook-ceph-block)
+      dataVolumeClaimSpec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi

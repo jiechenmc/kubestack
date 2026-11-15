@@ -17,6 +17,18 @@ presets:
   kubernetesAttributes:
     enabled: true
 
+# ingestion key for otlphttp/clickstack; optional, so the collector starts without it (clickstack
+# then rejects, loki/tempo are unaffected). infisical restarts the pods when the secret changes
+extraEnvs:
+  - name: HYPERDX_INGESTION_KEY
+    valueFrom:
+      secretKeyRef:
+        name: hyperdx-ingestion
+        key: HYPERDX_INGESTION_KEY
+        optional: true
+annotations:
+  secrets.infisical.com/auto-reload: "true"
+
 config:
   receivers:
     otlp: null
@@ -110,6 +122,17 @@ config:
     debug: null
     otlphttp/loki:
       endpoint: http://loki.logging.svc:3100/otlp
+    # side-by-side copy for clickstack (hyperdx.home.arpa). own queue and retries, so clickstack being
+    # down or rejecting never holds up loki; a full queue drops instead of growing. the ingestion key
+    # (hyperdx team settings -> infisical HYPERDX_INGESTION_KEY) arrives via the hyperdx-ingestion secret
+    otlphttp/clickstack:
+      endpoint: http://clickstack-otel-collector.clickstack.svc:4318
+      headers:
+        authorization: ${env:HYPERDX_INGESTION_KEY}
+      sending_queue:
+        queue_size: 1000
+      retry_on_failure:
+        max_elapsed_time: 60s
   service:
     pipelines:
       traces: null
@@ -117,7 +140,7 @@ config:
       logs:
         receivers: [] # filelog is added by the logsCollection preset
         processors: [memory_limiter, transform/clean, filter/empty, transform/severity, batch]
-        exporters: [otlphttp/loki]
+        exporters: [otlphttp/loki, otlphttp/clickstack]
 
 ports:
   otlp:
