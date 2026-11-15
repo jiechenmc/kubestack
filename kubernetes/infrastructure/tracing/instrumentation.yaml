@@ -38,4 +38,6 @@ spec:
       # so it only applies when the agent (and this file) was actually injected; the operator appends
       # its --require to it
       - name: NODE_OPTIONS
-        value: --experimental-loader=/otel-auto-instrumentation-nodejs/node_modules/@opentelemetry/instrumentation/hook.mjs
+        # register("file:///otel-auto-instrumentation-nodejs/.../hook.mjs"), percent-encoded so the
+        # value has no spaces or quotes (node's suggested replacement for --experimental-loader)
+        value: --import=data:text/javascript,import%7Bregister%7Dfrom%22node:module%22;register(%22file:///otel-auto-instrumentation-nodejs/node_modules/@opentelemetry/instrumentation/hook.mjs%22)
