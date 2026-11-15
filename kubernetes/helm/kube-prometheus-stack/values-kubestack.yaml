@@ -269,6 +269,12 @@ kubeEtcd:
 kubeProxy:
   enabled: false
 
+kube-state-metrics:
+  # kube_node_labels only exists for allowlisted labels. kubevirt's KubeVirtNoAvailableNodesToRunVMs
+  # counts nodes labelled kubevirt.io/schedulable=true from it, so without this it always fires
+  metricLabelsAllowlist:
+    - nodes=[kubevirt.io/schedulable]
+
 grafana:
   # the chart's ~25 kubernetes-mixin dashboards; replaced by the short list under dashboards below
   defaultDashboardsEnabled: false
