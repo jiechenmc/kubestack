@@ -33,6 +33,28 @@ prometheus:
     pathType: Prefix
 
 alertmanager:
+  alertmanagerSpec:
+    # links in notifications point here instead of the pod name
+    externalUrl: http://alertmanager.home.arpa
+    # discord webhook from infisical (InfisicalSecret alertmanager-discord in kubernetes/manifests/infisical.yaml),
+    # mounted at /etc/alertmanager/secrets/alertmanager-discord/
+    secrets:
+      - alertmanager-discord
+  # merged over the chart's config (inhibit rules, group_by etc. stay); receivers list is replaced whole
+  config:
+    route:
+      receiver: discord
+      routes:
+        # always-firing heartbeat and the info-inhibitor helper: not for humans
+        - receiver: 'null'
+          matchers:
+            - alertname =~ "Watchdog|InfoInhibitor"
+    receivers:
+      - name: 'null'
+      - name: discord
+        discord_configs:
+          - webhook_url_file: /etc/alertmanager/secrets/alertmanager-discord/webhook-url
+            send_resolved: true
   ingress:
     enabled: true
     ingressClassName: traefik
@@ -41,6 +63,32 @@ alertmanager:
     paths:
       - /
     pathType: Prefix
+
+# the chart's own KubePersistentVolumeFillingUp only fires at <3% free (or <15% free and predicted
+# full within 4 days); warn earlier, at a flat 90% used
+additionalPrometheusRulesMap:
+  pvc-usage:
+    groups:
+      - name: pvc-usage
+        rules:
+          - alert: PersistentVolumeClaimUsageHigh
+            # same exclusions as the chart rule: read-only volumes and pvcs labelled excluded_from_alerts=true
+            expr: |-
+              (
+                kubelet_volume_stats_used_bytes{job="kubelet", metrics_path="/metrics"}
+                  /
+                kubelet_volume_stats_capacity_bytes{job="kubelet", metrics_path="/metrics"}
+              ) > 0.90
+              unless on (namespace, persistentvolumeclaim)
+              kube_persistentvolumeclaim_access_mode{access_mode="ReadOnlyMany"} == 1
+              unless on (namespace, persistentvolumeclaim)
+              kube_persistentvolumeclaim_labels{label_excluded_from_alerts="true"} == 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: PersistentVolumeClaim is over 90% full.
+              description: PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full.
 
 # kubeadm binds these to 127.0.0.1 and cilium replaces kube-proxy, so they'd only show as down
 kubeControllerManager:

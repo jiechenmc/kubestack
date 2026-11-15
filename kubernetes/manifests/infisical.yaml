@@ -198,3 +198,30 @@ metadata:
   namespace: default
 imagePullSecrets:
   - name: ghcr
+---
+# discord webhook for alertmanager (mounted at /etc/alertmanager/secrets/alertmanager-discord/webhook-url)
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: alertmanager-discord
+  namespace: monitoring
+spec:
+  syncConfig:
+    resyncInterval: 60s
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: kubestack-ke-j0
+        envSlug: prod # "Production"
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: alertmanager-discord
+      secretNamespace: monitoring
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          webhook-url: "{{ .ALERTMANAGER_DISCORD_WEBHOOK_URL.Value }}"
