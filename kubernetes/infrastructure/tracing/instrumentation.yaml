@@ -33,3 +33,9 @@ spec:
       # skip the cloud detectors (gcp/aws/azure): off-cloud they only log MetadataLookupWarning
       - name: OTEL_NODE_RESOURCE_DETECTORS
         value: env,host,os,process,serviceinstance,container
+      # also hook ES modules ("type": "module", import ...). the operator's --require alone only sees
+      # require(), so an esm app (e.g. trix-auth) got no http server spans. set here, not on the pod,
+      # so it only applies when the agent (and this file) was actually injected; the operator appends
+      # its --require to it
+      - name: NODE_OPTIONS
+        value: --experimental-loader=/otel-auto-instrumentation-nodejs/node_modules/@opentelemetry/instrumentation/hook.mjs
