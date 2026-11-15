@@ -96,6 +96,168 @@ additionalPrometheusRulesMap:
             annotations:
               summary: PersistentVolumeClaim is over 90% full.
               description: PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full.
+  # components the chart's default rules don't know about. warning/critical pairs share an alertname so
+  # the chart's inhibit rule mutes the warning while the critical fires (one discord line, not two)
+  homelab:
+    groups:
+      - name: ceph
+        rules:
+          # ceph_health_status honours the cluster's muteHealthWarning list (ceph_health_detail does not)
+          - alert: CephHealthWarning
+            expr: ceph_health_status == 1
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: Ceph is HEALTH_WARN.
+              description: Ceph cluster {{ $labels.cluster }} has been HEALTH_WARN for 15m; run `ceph health detail` in the rook-ceph-tools pod.
+          - alert: CephHealthError
+            expr: ceph_health_status == 2
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: Ceph is HEALTH_ERR.
+              description: Ceph cluster {{ $labels.cluster }} is HEALTH_ERR; volumes may be read-only. Run `ceph health detail` in the rook-ceph-tools pod.
+          - alert: CephOSDDown
+            expr: ceph_osd_up == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: A Ceph OSD is down.
+              description: Ceph {{ $labels.ceph_daemon }} has been down for 5m.
+          - alert: CephMonOutOfQuorum
+            expr: ceph_mon_quorum_status == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: A Ceph monitor is out of quorum.
+              description: Ceph {{ $labels.ceph_daemon }} has been out of quorum for 5m.
+          # rbd volumes are thin-provisioned, so pvc sizes can add up to more than the raw capacity;
+          # ceph itself goes HEALTH_WARN at 85% (nearfull) and read-only at 95% (full)
+          - alert: CephClusterFillingUp
+            expr: ceph_cluster_total_used_bytes / ceph_cluster_total_bytes > 0.75
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: Ceph raw capacity is over 75% used.
+              description: Ceph cluster {{ $labels.cluster }} raw capacity is {{ $value | humanizePercentage }} used.
+          - alert: CephClusterFillingUp
+            expr: ceph_cluster_total_used_bytes / ceph_cluster_total_bytes > 0.85
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: Ceph raw capacity is over 85% used.
+              description: Ceph cluster {{ $labels.cluster }} raw capacity is {{ $value | humanizePercentage }} used; writes stop at 95%.
+      - name: cloudnative-pg
+        rules:
+          - alert: PostgresInstanceDown
+            expr: cnpg_collector_up == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: A Postgres instance is down.
+              description: Postgres {{ $labels.namespace }}/{{ $labels.pod }} (cluster {{ $labels.cluster }}) has been down for 5m.
+          - alert: PostgresReplicaNotStreaming
+            expr: cnpg_pg_replication_in_recovery == 1 and cnpg_pg_replication_is_wal_receiver_up == 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: A Postgres replica is not streaming from the primary.
+              description: Postgres replica {{ $labels.namespace }}/{{ $labels.pod }} has not been streaming wal from the primary for 5m.
+          - alert: PostgresReplicationLag
+            expr: cnpg_pg_replication_lag > 300
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: A Postgres replica is lagging.
+              description: Postgres replica {{ $labels.namespace }}/{{ $labels.pod }} is {{ $value | humanizeDuration }} behind the primary.
+          - alert: PostgresConnectionsHigh
+            expr: |-
+              sum by (namespace, pod, cluster) (cnpg_backends_total)
+                / on (namespace, pod) group_left
+              max by (namespace, pod) (cnpg_pg_settings_setting{name="max_connections"})
+              > 0.8
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: Postgres is near max_connections.
+              description: Postgres {{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }} of max_connections.
+      - name: argocd
+        rules:
+          # long windows: apps pass through OutOfSync/Progressing on every push
+          - alert: ArgoCDAppOutOfSync
+            expr: argocd_app_info{sync_status!="Synced"} == 1
+            for: 30m
+            labels:
+              severity: warning
+            annotations:
+              summary: An Argo CD app is out of sync.
+              description: Argo CD app {{ $labels.name }} has been {{ $labels.sync_status }} for 30m.
+          - alert: ArgoCDAppUnhealthy
+            expr: argocd_app_info{health_status!~"Healthy|Progressing|Suspended"} == 1
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: An Argo CD app is unhealthy.
+              description: Argo CD app {{ $labels.name }} has been {{ $labels.health_status }} for 15m.
+      - name: cert-manager
+        rules:
+          - alert: CertificateNotReady
+            expr: certmanager_certificate_ready_status{condition="False"} == 1
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: A cert-manager certificate is not ready.
+              description: Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} has not been ready for 15m.
+          # cert-manager renews at 2/3 of the lifetime, so a week left means renewal has been failing
+          - alert: CertificateExpiringSoon
+            expr: certmanager_certificate_expiration_timestamp_seconds - time() < 7 * 86400
+            for: 1h
+            labels:
+              severity: warning
+            annotations:
+              summary: A cert-manager certificate expires within a week.
+              description: Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} expires in {{ $value | humanizeDuration }}.
+      - name: node-hardware
+        rules:
+          # coretemp (optiplex) reports high 94 / crit 100; the ryzen's k10temp throttles at 95 and reports neither
+          - alert: NodeHighTemperature
+            expr: |-
+              max by (nodename, chip_name, sensor) (
+                node_hwmon_temp_celsius
+                * on (instance, chip) group_left (chip_name) node_hwmon_chip_names
+                * on (instance) group_left (nodename) node_uname_info
+              ) > 85
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: A node is running hot.
+              description: '{{ $labels.nodename }} {{ $labels.chip_name }} {{ $labels.sensor }} has been above 85°C for 10m (now {{ $value }}°C).'
+          - alert: NodeHighTemperature
+            expr: |-
+              max by (nodename, chip_name, sensor) (
+                node_hwmon_temp_celsius
+                * on (instance, chip) group_left (chip_name) node_hwmon_chip_names
+                * on (instance) group_left (nodename) node_uname_info
+              ) > 95
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: A node is about to thermal-throttle.
+              description: '{{ $labels.nodename }} {{ $labels.chip_name }} {{ $labels.sensor }} is at {{ $value }}°C (throttles around 95-100°C).'
 
 # kubeadm binds these to 127.0.0.1 and cilium replaces kube-proxy, so they'd only show as down
 kubeControllerManager:
