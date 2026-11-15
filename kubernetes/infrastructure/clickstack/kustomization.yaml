@@ -1,0 +1,23 @@
+# clickstack extras (synced by the clickstack argo cd app): networkpolicies, and hyperdx dashboards
+# as configmaps for the chart's dashboard provisioner (label hyperdx.io/dashboard=true).
+# dashboards/*.json are hyperdx dashboard documents; tiles reference this team's sources by id
+# (Logs 6afa34916fc6252e29615082, Metrics 6afa34916fc6252e29615086). if mongodb is ever recreated,
+# the sources get new ids: update them here (mongosh: db.sources.find({}, {name: 1}))
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: clickstack
+resources:
+  - networkpolicies.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    hyperdx.io/dashboard: "true"
+configMapGenerator:
+  - name: hyperdx-dashboard-kubernetes-cluster
+    files: [dashboards/kubernetes-cluster.json]
+  - name: hyperdx-dashboard-ceph-storage
+    files: [dashboards/ceph-storage.json]
+  - name: hyperdx-dashboard-postgres-cnpg
+    files: [dashboards/postgres-cnpg.json]
+  - name: hyperdx-dashboard-virtual-machines
+    files: [dashboards/virtual-machines.json]

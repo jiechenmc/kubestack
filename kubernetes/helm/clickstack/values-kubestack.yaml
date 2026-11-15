@@ -17,6 +17,14 @@ hyperdx:
     CLICKHOUSE_PASSWORD: "08481b1b9cbd08d1a9f34e79f68a2ad2"
     CLICKHOUSE_APP_PASSWORD: "70ef4afff0b67f5b3e5501c1a600272f"
     MONGODB_PASSWORD: "e98ec19b7c011276b5378d13c5ab046e"
+  # dashboards as code: a sidecar picks up ConfigMaps labeled hyperdx.io/dashboard=true in this
+  # namespace (kubernetes/infrastructure/clickstack/dashboards, via kustomize) and hyperdx upserts
+  # them by name every 30s. removing a file does not delete its dashboard; delete it in the ui
+  dashboards:
+    enabled: true
+  # the dashboard watcher's configmap rbac binds to this serviceaccount
+  serviceAccount:
+    create: true
   ingress:
     enabled: true
     spec:

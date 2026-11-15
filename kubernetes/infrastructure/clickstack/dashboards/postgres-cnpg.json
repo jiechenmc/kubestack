@@ -1,0 +1,319 @@
+{
+  "name": "Postgres (CloudNativePG)",
+  "tags": [
+    "kubestack",
+    "postgres"
+  ],
+  "tiles": [
+    {
+      "id": "t00",
+      "x": 0,
+      "y": 0,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "name": "Collector Up",
+        "source": "6afa34916fc6252e29615086",
+        "displayType": "number",
+        "granularity": "auto",
+        "alignDateRangeToGranularity": true,
+        "select": [
+          {
+            "aggFn": "min",
+            "valueExpression": "",
+            "metricName": "cnpg_collector_up",
+            "metricType": "gauge"
+          }
+        ],
+        "where": "",
+        "whereLanguage": "sql",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 0,
+          "thousandSeparated": true
+        },
+        "colorRules": [
+          {
+            "operator": "lt",
+            "value": 1,
+            "color": "chart-error",
+            "label": "Down"
+          }
+        ]
+      }
+    },
+    {
+      "id": "t01",
+      "x": 6,
+      "y": 0,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "name": "Replication Lag (s, max)",
+        "source": "6afa34916fc6252e29615086",
+        "displayType": "number",
+        "granularity": "auto",
+        "alignDateRangeToGranularity": true,
+        "select": [
+          {
+            "aggFn": "max",
+            "valueExpression": "",
+            "metricName": "cnpg_pg_replication_lag",
+            "metricType": "gauge"
+          }
+        ],
+        "where": "",
+        "whereLanguage": "sql",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2,
+          "thousandSeparated": true
+        }
+      }
+    },
+    {
+      "id": "t02",
+      "x": 12,
+      "y": 0,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "name": "Backends (total)",
+        "source": "6afa34916fc6252e29615086",
+        "displayType": "number",
+        "granularity": "auto",
+        "alignDateRangeToGranularity": true,
+        "select": [
+          {
+            "aggFn": "sum",
+            "valueExpression": "",
+            "metricName": "cnpg_backends_total",
+            "metricType": "gauge"
+          }
+        ],
+        "where": "",
+        "whereLanguage": "sql",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 0,
+          "thousandSeparated": true
+        }
+      }
+    },
+    {
+      "id": "t03",
+      "x": 18,
+      "y": 0,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "name": "Fencing On",
+        "source": "6afa34916fc6252e29615086",
+        "displayType": "number",
+        "granularity": "auto",
+        "alignDateRangeToGranularity": true,
+        "select": [
+          {
+            "aggFn": "max",
+            "valueExpression": "",
+            "metricName": "cnpg_collector_fencing_on",
+            "metricType": "gauge"
+          }
+        ],
+        "where": "",
+        "whereLanguage": "sql",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 0,
+          "thousandSeparated": true
+        },
+        "colorRules": [
+          {
+            "operator": "gte",
+            "value": 1,
+            "color": "chart-warning",
+            "label": "Fenced"
+          }
+        ]
+      }
+    },
+    {
+      "id": "t04",
+      "x": 0,
+      "y": 4,
+      "w": 12,
+      "h": 7,
+      "config": {
+        "name": "Database Size",
+        "source": "6afa34916fc6252e29615086",
+        "displayType": "line",
+        "granularity": "auto",
+        "alignDateRangeToGranularity": true,
+        "select": [
+          {
+            "aggFn": "max",
+            "valueExpression": "",
+            "metricName": "cnpg_pg_database_size_bytes",
+            "metricType": "gauge"
+          }
+        ],
+        "where": "",
+        "whereLanguage": "sql",
+        "groupBy": "Attributes['datname']",
+        "numberFormat": {
+          "output": "byte",
+          "mantissa": 1
+        }
+      }
+    },
+    {
+      "id": "t05",
+      "x": 12,
+      "y": 4,
+      "w": 12,
+      "h": 7,
+      "config": {
+        "name": "Replication Lag by Instance (s)",
+        "source": "6afa34916fc6252e29615086",
+        "displayType": "line",
+        "granularity": "auto",
+        "alignDateRangeToGranularity": true,
+        "select": [
+          {
+            "aggFn": "max",
+            "valueExpression": "",
+            "metricName": "cnpg_pg_replication_lag",
+            "metricType": "gauge"
+          }
+        ],
+        "where": "",
+        "whereLanguage": "sql",
+        "groupBy": "Attributes['pod']",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2,
+          "thousandSeparated": true
+        }
+      }
+    },
+    {
+      "id": "t06",
+      "x": 0,
+      "y": 11,
+      "w": 12,
+      "h": 7,
+      "config": {
+        "name": "Backends by State",
+        "source": "6afa34916fc6252e29615086",
+        "displayType": "stacked_bar",
+        "granularity": "auto",
+        "alignDateRangeToGranularity": true,
+        "select": [
+          {
+            "aggFn": "sum",
+            "valueExpression": "",
+            "metricName": "cnpg_backends_total",
+            "metricType": "gauge"
+          }
+        ],
+        "where": "",
+        "whereLanguage": "sql",
+        "groupBy": "Attributes['state']",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 0,
+          "thousandSeparated": true
+        }
+      }
+    },
+    {
+      "id": "t07",
+      "x": 12,
+      "y": 11,
+      "w": 12,
+      "h": 7,
+      "config": {
+        "name": "Backends by Application",
+        "source": "6afa34916fc6252e29615086",
+        "displayType": "table",
+        "granularity": "auto",
+        "alignDateRangeToGranularity": true,
+        "select": [
+          {
+            "aggFn": "sum",
+            "valueExpression": "",
+            "metricName": "cnpg_backends_total",
+            "metricType": "gauge"
+          }
+        ],
+        "where": "",
+        "whereLanguage": "sql",
+        "groupBy": "Attributes['application_name']",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 0,
+          "thousandSeparated": true
+        }
+      }
+    },
+    {
+      "id": "t08",
+      "x": 0,
+      "y": 18,
+      "w": 12,
+      "h": 7,
+      "config": {
+        "name": "Postgres Errors by Pod",
+        "source": "6afa34916fc6252e29615082",
+        "displayType": "table",
+        "granularity": "auto",
+        "alignDateRangeToGranularity": true,
+        "select": [
+          {
+            "aggFn": "count",
+            "valueExpression": "",
+            "alias": "Logs"
+          }
+        ],
+        "where": "ResourceAttributes['k8s.pod.name'] LIKE 'pg-%' AND SeverityText IN ('ERROR', 'error', 'FATAL', 'fatal', 'CRITICAL', 'critical')",
+        "whereLanguage": "sql",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 0,
+          "thousandSeparated": true
+        },
+        "groupBy": "ResourceAttributes['k8s.pod.name']",
+        "orderBy": "`Logs` DESC"
+      }
+    },
+    {
+      "id": "t09",
+      "x": 12,
+      "y": 18,
+      "w": 12,
+      "h": 7,
+      "config": {
+        "name": "Postgres Log Volume by Pod",
+        "source": "6afa34916fc6252e29615082",
+        "displayType": "stacked_bar",
+        "granularity": "auto",
+        "alignDateRangeToGranularity": true,
+        "select": [
+          {
+            "aggFn": "count",
+            "valueExpression": "",
+            "alias": "Logs"
+          }
+        ],
+        "where": "ResourceAttributes['k8s.pod.name'] LIKE 'pg-%'",
+        "whereLanguage": "sql",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 0,
+          "thousandSeparated": true
+        },
+        "groupBy": "ResourceAttributes['k8s.pod.name']"
+      }
+    }
+  ]
+}
