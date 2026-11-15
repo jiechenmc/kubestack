@@ -89,6 +89,13 @@ config:
             - set(severity_text, "WARN") where severity_text == "" and IsMatch(body, "^\\[[0-9:]+\\] \\[[^\\]]*/WARN\\]")
             - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "^\\[[0-9:]+\\] \\[[^\\]]*/ERROR\\]")
             - set(severity_text, "FATAL") where severity_text == "" and IsMatch(body, "^\\[[0-9:]+\\] \\[[^\\]]*/FATAL\\]")
+            # python logging "%(asctime)s %(levelname)s %(name)s ..." (trix api, uvicorn). must come
+            # before the wording guess: uvicorn logs everything to a logger named "uvicorn.error"
+            - set(severity_text, "DEBUG") where severity_text == "" and IsMatch(body, "^\\d{4}-\\d\\d-\\d\\d [\\d:,.]+ DEBUG ")
+            - set(severity_text, "INFO") where severity_text == "" and IsMatch(body, "^\\d{4}-\\d\\d-\\d\\d [\\d:,.]+ INFO ")
+            - set(severity_text, "WARN") where severity_text == "" and IsMatch(body, "^\\d{4}-\\d\\d-\\d\\d [\\d:,.]+ WARNING ")
+            - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "^\\d{4}-\\d\\d-\\d\\d [\\d:,.]+ ERROR ")
+            - set(severity_text, "FATAL") where severity_text == "" and IsMatch(body, "^\\d{4}-\\d\\d-\\d\\d [\\d:,.]+ CRITICAL ")
             # anything still without a level: guess from wording, otherwise info (never "unknown")
             - set(severity_text, "ERROR") where severity_text == "" and IsMatch(body, "(?i)\\b(error|errors|err|fail|failed|failure|fatal|panic|exception)\\b")
             - set(severity_text, "WARN") where severity_text == "" and IsMatch(body, "(?i)\\b(warn|warning|deprecated)\\b")
