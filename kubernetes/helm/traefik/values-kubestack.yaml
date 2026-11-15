@@ -1,5 +1,13 @@
 # kubestack overrides for traefik, layered on values.yaml
 
+ports:
+  web:
+    transport:
+      respondingTimeouts:
+        # traefik v3 defaults to 60s, which cuts off any request body that takes longer to send
+        # (virtctl image-upload of a multi-gb disk through cdi-upload.home.arpa)
+        readTimeout: 30m
+
 # a span for every request through the ingress (*.home.arpa, the cloudflare tunnel), sent to the
 # otlp gateway in tracing -> tempo. traefik also forwards traceparent, so instrumented backends
 # (e.g. trix) continue the same trace

@@ -16,4 +16,8 @@ spec:
     imagePullPolicy: IfNotPresent
   customizeComponents: {}
   imagePullPolicy: IfNotPresent
+  # virt-operator creates its ServiceMonitor and PrometheusRules (vm/handler alerts) here and grants this
+  # service account read access to virt-handler metrics; kube-prometheus-stack selects every monitor/rule
+  monitorNamespace: monitoring
+  monitorAccount: kube-prometheus-stack-prometheus
   workloadUpdateStrategy: {}

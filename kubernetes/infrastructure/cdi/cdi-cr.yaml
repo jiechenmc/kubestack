@@ -11,6 +11,8 @@ spec:
   config:
     featureGates:
       - HonorWaitForFirstConsumer
+    # virtctl image-upload reads this, so uploads go through traefik without --uploadproxy-url
+    uploadProxyURLOverride: http://cdi-upload.home.arpa
   imagePullPolicy: IfNotPresent
   infra:
     nodeSelector:

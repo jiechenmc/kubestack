@@ -5762,6 +5762,9 @@ spec:
         - name: PULL_POLICY
           value: IfNotPresent
         - name: MONITORING_NAMESPACE
+          # kubestack: release manifest leaves this empty (no monitoring); cdi-operator creates its
+          # ServiceMonitor and PrometheusRules here, where kube-prometheus-stack picks them up
+          value: monitoring
         image: quay.io/kubevirt/cdi-operator:v1.66.1
         imagePullPolicy: IfNotPresent
         livenessProbe:
