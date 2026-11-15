@@ -6,13 +6,31 @@ kind: Namespace
 metadata:
   name: pihole
 ---
-apiVersion: v1
-kind: Secret
+# web ui / api password
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
 metadata:
   name: pihole
   namespace: pihole
-stringData:
-  password: admin
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: kubestack-ke-j0
+        envSlug: prod # "Production"
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: pihole
+      secretNamespace: pihole
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          password: "{{ .PIHOLE_PASSWORD.Value }}"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -32,6 +50,8 @@ kind: Deployment
 metadata:
   name: pihole
   namespace: pihole
+  annotations:
+    secrets.infisical.com/auto-reload: "true" # restart when the password changes in infisical
 spec:
   replicas: 1
   # rwo volume and a single dns instance: replace, don't overlap

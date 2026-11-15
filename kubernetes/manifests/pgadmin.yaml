@@ -5,6 +5,32 @@ kind: Namespace
 metadata:
   name: pgadmin
 ---
+# pgadmin4 login password (only applied when pgadmin first initialises its data volume)
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: pgadmin
+  namespace: pgadmin
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: kubestack-ke-j0
+        envSlug: prod # "Production"
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: pgadmin
+      secretNamespace: pgadmin
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          password: "{{ .PGADMIN_PASSWORD.Value }}"
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:

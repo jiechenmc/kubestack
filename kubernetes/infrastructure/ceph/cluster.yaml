@@ -1,11 +1,28 @@
-# rook applies this to the dashboard "admin" user on every reconcile (it only generates one if missing)
-apiVersion: v1
-kind: Secret
+# ceph dashboard "admin" user password from infisical; rook applies it on every reconcile
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
 metadata:
   name: rook-ceph-dashboard-password
   namespace: rook-ceph
-stringData:
-  password: admin
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: kubestack-ke-j0
+        envSlug: prod # "Production"
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: rook-ceph-dashboard-password
+      secretNamespace: rook-ceph
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          password: "{{ .CEPH_DASHBOARD_PASSWORD.Value }}"
 ---
 apiVersion: ceph.rook.io/v1
 kind: CephCluster

@@ -50,7 +50,11 @@ kubeProxy:
   enabled: false
 
 grafana:
-  adminPassword: admin
+  # login from infisical (InfisicalSecret grafana-admin in kubernetes/manifests/infisical.yaml)
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
   # grafana 13 no longer bundles the loki datasource; install it from the plugin catalog at startup
   plugins:
     - loki

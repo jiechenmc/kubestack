@@ -104,6 +104,85 @@ spec:
         data:
           .dockerconfigjson: "{{ .GHCR_CREDENTIAL.Value }}"
 ---
+# grafana admin login (kube-prometheus-stack grafana.admin.existingSecret)
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: grafana-admin
+  namespace: monitoring
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: kubestack-ke-j0
+        envSlug: prod # "Production"
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: grafana-admin
+      secretNamespace: monitoring
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          admin-user: "{{ .GRAFANA_ADMIN_USER.Value }}"
+          admin-password: "{{ .GRAFANA_ADMIN_PASSWORD.Value }}"
+---
+# trix api: amap web service key
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: trix-api
+  namespace: default
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: kubestack-ke-j0
+        envSlug: prod # "Production"
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: trix-api
+      secretNamespace: default
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          amap-key: "{{ .TRIX_AMAP_KEY.Value }}"
+---
+# trix web: amap js security code
+apiVersion: secrets.infisical.com/v1alpha1
+kind: InfisicalSecret
+metadata:
+  name: trix-web
+  namespace: default
+spec:
+  resyncInterval: 60
+  authentication:
+    universalAuth:
+      credentialsRef:
+        secretName: infisical-universal-auth
+        secretNamespace: default
+      secretsScope:
+        projectSlug: kubestack-ke-j0
+        envSlug: prod # "Production"
+        secretsPath: "/"
+  managedKubeSecretReferences:
+    - secretName: trix-web
+      secretNamespace: default
+      creationPolicy: Orphan
+      template:
+        includeAllSecrets: false
+        data:
+          amap-security-code: "{{ .TRIX_AMAP_SECURITY_CODE.Value }}"
+---
 # every pod in default pulls from ghcr without listing imagePullSecrets itself
 apiVersion: v1
 kind: ServiceAccount
