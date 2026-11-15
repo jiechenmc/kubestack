@@ -1,0 +1,36 @@
+# ceph dashboard and s3 gateway by name through traefik (*.home.arpa -> traefik via pi-hole)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ceph-dashboard
+  namespace: rook-ceph
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: ceph.home.arpa
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rook-ceph-mgr-dashboard
+                port:
+                  name: http-dashboard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rook-ceph-mgr-dashboard-loadbalancer
+  namespace: rook-ceph
+spec:
+  type: LoadBalancer
+  selector:
+    app: rook-ceph-mgr
+    mgr_role: active
+    rook_cluster: rook-ceph
+  ports:
+    - name: dashboard
+      port: 80
+      targetPort: 7000 # dashboard.ssl is unset, so the mgr serves plain http on 7000
+      protocol: TCP
