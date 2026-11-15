@@ -1,8 +1,0 @@
-# clickstack extras (synced by the clickstack argo cd app). hyperdx dashboards can be provisioned
-# from here too: a configMapGenerator entry per dashboard json, labeled hyperdx.io/dashboard=true
-# (the chart's provisioner upserts them by name; tiles reference sources by id, see mongodb `sources`)
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-namespace: clickstack
-resources:
-  - networkpolicies.yaml

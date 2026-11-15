@@ -13,17 +13,6 @@ presets:
   kubernetesAttributes:
     enabled: true
 
-# ingestion key for otlphttp/clickstack; optional, so the collector starts without it (clickstack
-# then rejects, loki/tempo are unaffected). infisical restarts the pods when the secret changes
-extraEnvs:
-  - name: HYPERDX_INGESTION_KEY
-    valueFrom:
-      secretKeyRef:
-        name: hyperdx-ingestion
-        key: HYPERDX_INGESTION_KEY
-        optional: true
-annotations:
-  secrets.infisical.com/auto-reload: "true"
 
 config:
   receivers:
@@ -45,17 +34,6 @@ config:
       endpoint: tempo.tracing.svc:4317
       tls:
         insecure: true
-    # side-by-side copy for clickstack (hyperdx.home.arpa). own queue and retries, so clickstack being
-    # down or rejecting never holds up tempo; a full queue drops instead of growing. the ingestion key
-    # (hyperdx team settings -> infisical HYPERDX_INGESTION_KEY) arrives via the hyperdx-ingestion secret
-    otlphttp/clickstack:
-      endpoint: http://clickstack-otel-collector.clickstack.svc:4318
-      headers:
-        authorization: ${env:HYPERDX_INGESTION_KEY}
-      sending_queue:
-        queue_size: 1000
-      retry_on_failure:
-        max_elapsed_time: 60s
   service:
     pipelines:
       logs: null
@@ -63,7 +41,7 @@ config:
       traces:
         receivers: [otlp]
         processors: [memory_limiter, filter/asgi-messages, batch]
-        exporters: [otlp/tempo, otlphttp/clickstack]
+        exporters: [otlp/tempo]
 
 ports:
   jaeger-compact:
