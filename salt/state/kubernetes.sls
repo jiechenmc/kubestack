@@ -1,8 +1,10 @@
 {% set home = salt['environ.get']('HOME') %}
-{# true when a cluster already exists for the current k8s_api_ip #}
-{% set cluster_matches_ip = "grep -qs 'server: https://" ~ pillar['k8s_api_ip'] ~ ":" ~ pillar['k8s_svc_port'] ~ "$' /etc/kubernetes/admin.conf" %}
-{# true when this node's kubelet is already joined to the cluster at k8s_api_ip #}
-{% set kubelet_matches_ip = "grep -qs 'server: https://" ~ pillar['k8s_api_ip'] ~ ":" ~ pillar['k8s_svc_port'] ~ "$' /etc/kubernetes/kubelet.conf" %}
+{# api endpoint: the kube-vip vip when set, else the primary's own address #}
+{% set api_endpoint = pillar.get('k8s_api_vip', pillar['k8s_api_ip']) %}
+{# true when a cluster already exists for the current api endpoint #}
+{% set cluster_matches_ip = "grep -qs 'server: https://" ~ api_endpoint ~ ":" ~ pillar['k8s_svc_port'] ~ "$' /etc/kubernetes/admin.conf" %}
+{# true when this node's kubelet is already joined to the cluster at the api endpoint #}
+{% set kubelet_matches_ip = "grep -qs 'server: https://" ~ api_endpoint ~ ":" ~ pillar['k8s_svc_port'] ~ "$' /etc/kubernetes/kubelet.conf" %}
 
 {# node role: k8s_masters lists the control-plane nodes, anything not listed is a worker #}
 {% set node_addrs = salt['grains.get']('ipv4', []) + [grains['id']] %}
@@ -12,6 +14,13 @@
 {% set is_master = my_master_ips | length > 0 %}
 {% set is_primary = primary in node_addrs %}
 {% set crio_socket = 'unix:///var/run/crio/crio.sock' %}
+{# masters must also run an api server, so a node joined as a worker gets re-joined as a master #}
+{% set node_joined = kubelet_matches_ip ~ (" && test -e /etc/kubernetes/manifests/kube-apiserver.yaml" if is_master else "") %}
+{% set my_ip = my_master_ips[0] if is_master else '' %}
+{% set vip_iface = [] %}
+{% for iface, addrs in salt['grains.get']('ip4_interfaces', {}).items() if my_ip in addrs %}
+{% do vip_iface.append(iface) %}
+{% endfor %}
 
 disable_swap:
   cmd.run:
@@ -165,13 +174,85 @@ kubeconfig_env:
   file.append:
     - name: /etc/profile.d/kubernetes.sh
     - text: 'export KUBECONFIG=/etc/kubernetes/admin.conf'
+
+{% if pillar.get('k8s_api_vip') %}
+# kube-vip static pod: the leader of the plndr-cp-lock lease holds k8s_api_vip on this lan (arp).
+# it talks to this node's own api server (kubernetes_addr) so it never depends on the vip itself.
+# the primary mounts super-admin.conf: during kubeadm init, admin.conf has no rbac yet and the
+# init phases already need the vip; joined masters only have admin.conf
+kube_vip:
+  file.managed:
+    - name: /etc/kubernetes/manifests/kube-vip.yaml
+    - makedirs: True
+    - contents: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: kube-vip
+          namespace: kube-system
+        spec:
+          hostNetwork: true
+          containers:
+            - name: kube-vip
+              image: {{ pillar['kube_vip_image'] }}
+              args: ["manager"]
+              env:
+                - {name: vip_arp, value: "true"}
+                - {name: port, value: "{{ pillar['k8s_svc_port'] }}"}
+                - {name: vip_interface, value: "{{ vip_iface | first | default('') }}"}
+                - {name: vip_subnet, value: "32"}
+                - {name: address, value: "{{ pillar['k8s_api_vip'] }}"}
+                - {name: cp_enable, value: "true"}
+                - {name: cp_namespace, value: kube-system}
+                - {name: svc_enable, value: "false"} # cilium announces loadbalancer ips
+                - {name: vip_leaderelection, value: "true"}
+                - {name: vip_leasename, value: plndr-cp-lock}
+                - {name: vip_leaseduration, value: "5"}
+                - {name: vip_renewdeadline, value: "3"}
+                - {name: vip_retryperiod, value: "1"}
+                - {name: kubernetes_addr, value: "https://{{ my_ip }}:{{ pillar['k8s_svc_port'] }}"}
+                - {name: prometheus_server, value: ":2112"}
+              securityContext:
+                capabilities:
+                  add: ["NET_ADMIN", "NET_RAW"]
+              volumeMounts:
+                - name: kubeconfig
+                  mountPath: /etc/kubernetes/admin.conf
+                  readOnly: true
+          volumes:
+            - name: kubeconfig
+              hostPath:
+                path: /etc/kubernetes/{{ 'super-admin.conf' if is_primary else 'admin.conf' }}
+                type: File
+    - require:
+{%- if is_primary %}
+      - cmd: kubeadm_reset
+{%- else %}
+      - cmd: kubeadm_join
+{%- endif %}
+
+# control-plane nodes run workloads too (no dedicated workers)
+control_plane_untaint:
+  cmd.run:
+    - name: kubectl taint node "$(kubectl get node -o name -l kubernetes.io/hostname="$(hostname)" | cut -d/ -f2)" node-role.kubernetes.io/control-plane:NoSchedule-
+    - onlyif: kubectl get node -l kubernetes.io/hostname="$(hostname)" -o jsonpath='{.items[*].spec.taints}' | grep -q node-role.kubernetes.io/control-plane
+    - require:
+{%- if is_primary %}
+      - cmd: kubeadm_init
+{%- else %}
+      - cmd: kubeadm_join
+{%- endif %}
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+{% endif %}
 {% endif %}
 
 {% if not is_primary %}
 # secondary control-plane and worker nodes: join the cluster at k8s_api_ip.
 # the join command comes from pillar k8s_join_command when set, e.g.
-#   salt-call state.apply pillar='{"k8s_join_command": "kubeadm join ..."}'
-# (from `kubeadm token create --print-join-command` on the primary), otherwise it is
+#   salt-call state.apply pillar='{"k8s_join_command": "kubeadm join ...", "k8s_certificate_key": "..."}'
+# (from `kubeadm token create --print-join-command` and, for masters,
+# `kubeadm init phase upload-certs --upload-certs` on the primary), otherwise they are
 # fetched over ssh from the primary master, which needs root key access to it.
 kubeadm_join_reset:
   cmd.run:
@@ -180,8 +261,9 @@ kubeadm_join_reset:
         rm -rf /etc/cni/net.d/* /var/lib/cni /var/run/cilium
         ip link delete cilium_host 2>/dev/null || true
         ip link delete cilium_vxlan 2>/dev/null || true
-    - onlyif: test -e /etc/kubernetes/kubelet.conf
-    - unless: {{ kubelet_matches_ip | yaml_encode }}
+    # also catches a half-finished join (certs/manifests written, no kubelet.conf yet)
+    - onlyif: test -e /etc/kubernetes/kubelet.conf -o -e /etc/kubernetes/pki/ca.crt
+    - unless: {{ node_joined | yaml_encode }}
     - require:
       - service: crio_service
 
@@ -195,12 +277,16 @@ kubeadm_join:
         join_cmd="$(ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new root@{{ primary }} kubeadm token create --print-join-command)"
 {%- endif %}
 {%- if is_master %}
+{%- if pillar.get('k8s_certificate_key') %}
+        cert_key={{ pillar['k8s_certificate_key'] | yaml_encode }}
+{%- else %}
         cert_key="$(ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new root@{{ primary }} kubeadm init phase upload-certs --upload-certs | tail -1)"
+{%- endif %}
         $join_cmd --cri-socket={{ crio_socket }} --control-plane --certificate-key "$cert_key" --apiserver-advertise-address={{ my_master_ips[0] }}
 {%- else %}
         $join_cmd --cri-socket={{ crio_socket }}
 {%- endif %}
-    - unless: {{ kubelet_matches_ip | yaml_encode }}
+    - unless: {{ node_joined | yaml_encode }}
     - require:
       - cmd: kubeadm_join_reset
       - service: kubectl_service
@@ -235,10 +321,13 @@ kubeadm_reset:
 
 kubeadm_init:
   cmd.run:
-    - name: kubeadm init --cri-socket={{ crio_socket }} --skip-phases=addon/kube-proxy --apiserver-advertise-address={{ pillar['k8s_api_ip'] }} --control-plane-endpoint={{ pillar['k8s_api_ip'] }}:{{ pillar['k8s_svc_port'] }} --service-cidr={{ pillar['service_cidr'] }}
+    - name: kubeadm init --cri-socket={{ crio_socket }} --skip-phases=addon/kube-proxy --apiserver-advertise-address={{ pillar['k8s_api_ip'] }} --control-plane-endpoint={{ api_endpoint }}:{{ pillar['k8s_svc_port'] }} --service-cidr={{ pillar['service_cidr'] }} --ignore-preflight-errors=DirAvailable--etc-kubernetes-manifests
     - unless: {{ cluster_matches_ip | yaml_encode }}
     - require:
       - cmd: kubeadm_reset
+{%- if pillar.get('k8s_api_vip') %}
+      - file: kube_vip
+{%- endif %}
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 
@@ -248,7 +337,7 @@ kubeadm_control_plane_endpoint:
   cmd.run:
     - name: |
         kubectl -n kube-system get cm kubeadm-config -o yaml \
-          | sed '/^  ClusterConfiguration: |$/a\    controlPlaneEndpoint: {{ pillar['k8s_api_ip'] }}:{{ pillar['k8s_svc_port'] }}' \
+          | sed '/^  ClusterConfiguration: |$/a\    controlPlaneEndpoint: {{ api_endpoint }}:{{ pillar['k8s_svc_port'] }}' \
           | kubectl replace -f -
     - unless: kubectl -n kube-system get cm kubeadm-config -o jsonpath='{.data.ClusterConfiguration}' | grep -q '^controlPlaneEndpoint:'
     - require:
@@ -268,7 +357,7 @@ add_cilium_repo:
 install_cilium:
   cmd.run:
     - name: |
-        helm upgrade --install cilium cilium/cilium \
+        helm upgrade --install --history-max 3 cilium cilium/cilium \
           --version {{ pillar['cilium_version'] }} \
           --namespace kube-system \
           --set kubeProxyReplacement=true \
@@ -276,7 +365,7 @@ install_cilium:
           --set routingMode=native \
           --set ipv4NativeRoutingCIDR={{ pillar['pod_cidr'] }} \
           --set autoDirectNodeRoutes=true \
-          --set k8sServiceHost={{ pillar['k8s_api_ip'] }} \
+          --set k8sServiceHost={{ api_endpoint }} \
           --set k8sServicePort={{ pillar['k8s_svc_port'] }} \
           --set operator.replicas=1 \
           --set ipam.mode=cluster-pool \
@@ -329,8 +418,9 @@ cilium_l2_announcements:
         metadata:
           name: lan
         spec:
+          # any wired nic: nodes differ (enp4s0, eno2); excludes wifi (wlp3s0 on the primary)
           interfaces:
-            - ^{{ pillar['k8s_api_iface'] }}$
+            - ^en
           loadBalancerIPs: true
           externalIPs: true
         MANIFEST
@@ -344,7 +434,7 @@ cilium_l2_announcements:
 kube_prometheus_stack:
   cmd.run:
     - name: |
-        helm upgrade --install kube-prometheus-stack {{ pillar['kps_chart'] }} \
+        helm upgrade --install --history-max 3 kube-prometheus-stack {{ pillar['kps_chart'] }} \
           --namespace monitoring --create-namespace \
           --values {{ pillar['kps_chart'] }}/values-kubestack.yaml
     - require:
@@ -355,7 +445,7 @@ kube_prometheus_stack:
 rook_ceph_operator:
   cmd.run:
     - name: |
-        helm upgrade --install rook-ceph {{ pillar['rook_ceph_chart'] }} \
+        helm upgrade --install --history-max 3 rook-ceph {{ pillar['rook_ceph_chart'] }} \
           --namespace rook-ceph --create-namespace \
           --values {{ pillar['rook_ceph_chart'] }}/values.yaml
     - require:
@@ -368,7 +458,7 @@ rook_ceph_operator:
 metrics_server:
   cmd.run:
     - name: |
-        helm upgrade --install metrics-server {{ pillar['metrics_server_chart'] }} \
+        helm upgrade --install --history-max 3 metrics-server {{ pillar['metrics_server_chart'] }} \
           --namespace kube-system \
           --values {{ pillar['metrics_server_chart'] }}/values-kubestack.yaml
     - require:
@@ -380,7 +470,7 @@ metrics_server:
 volume_snapshots:
   cmd.run:
     - name: |
-        helm upgrade --install snapshot-controller {{ pillar['snapshot_controller_chart'] }} \
+        helm upgrade --install --history-max 3 snapshot-controller {{ pillar['snapshot_controller_chart'] }} \
           --namespace kube-system \
           --values {{ pillar['snapshot_controller_chart'] }}/values-kubestack.yaml
         kubectl wait --for condition=established --timeout=120s crd/volumesnapshotclasses.snapshot.storage.k8s.io
@@ -418,7 +508,7 @@ volume_snapshots:
 ceph_csi_drivers:
   cmd.run:
     - name: |
-        helm upgrade --install ceph-csi-drivers {{ pillar['ceph_csi_drivers_chart'] }} \
+        helm upgrade --install --history-max 3 ceph-csi-drivers {{ pillar['ceph_csi_drivers_chart'] }} \
           --namespace rook-ceph \
           --values {{ pillar['ceph_csi_drivers_chart'] }}/values-rook.yaml
     - require:
@@ -666,7 +756,7 @@ rook_ceph_cluster:
 cnpg_operator:
   cmd.run:
     - name: |
-        helm upgrade --install cnpg {{ pillar['cnpg_chart'] }} \
+        helm upgrade --install --history-max 3 cnpg {{ pillar['cnpg_chart'] }} \
           --namespace cnpg-system --create-namespace \
           --values {{ pillar['cnpg_chart'] }}/values.yaml \
           --set monitoring.podMonitorEnabled=true \
@@ -693,7 +783,7 @@ cortex:
           storageClassName: rook-ceph-bucket
         MANIFEST
         kubectl -n cortex wait --for=jsonpath='{.status.phase}'=Bound obc/cortex-bucket --timeout=120s
-        helm upgrade --install cortex {{ pillar['cortex_chart'] }} \
+        helm upgrade --install --history-max 3 cortex {{ pillar['cortex_chart'] }} \
           --namespace cortex \
           --values {{ pillar['cortex_chart'] }}/values-kubestack.yaml
     - require:
@@ -717,10 +807,10 @@ tracing:
           storageClassName: rook-ceph-bucket
         MANIFEST
         kubectl -n tracing wait --for=jsonpath='{.status.phase}'=Bound obc/tempo-bucket --timeout=120s
-        helm upgrade --install tempo {{ pillar['tempo_chart'] }} \
+        helm upgrade --install --history-max 3 tempo {{ pillar['tempo_chart'] }} \
           --namespace tracing \
           --values {{ pillar['tempo_chart'] }}/values-kubestack.yaml
-        helm upgrade --install otel-collector {{ pillar['otelcol_chart'] }} \
+        helm upgrade --install --history-max 3 otel-collector {{ pillar['otelcol_chart'] }} \
           --namespace tracing \
           --values {{ pillar['otelcol_chart'] }}/values-kubestack.yaml
     - require:
@@ -745,10 +835,10 @@ logging:
           storageClassName: rook-ceph-bucket
         MANIFEST
         kubectl -n logging wait --for=jsonpath='{.status.phase}'=Bound obc/loki-bucket --timeout=120s
-        helm upgrade --install loki {{ pillar['loki_chart'] }} \
+        helm upgrade --install --history-max 3 loki {{ pillar['loki_chart'] }} \
           --namespace logging \
           --values {{ pillar['loki_chart'] }}/values-kubestack.yaml
-        helm upgrade --install otel-logs {{ pillar['otelcol_chart'] }} \
+        helm upgrade --install --history-max 3 otel-logs {{ pillar['otelcol_chart'] }} \
           --namespace logging \
           --values {{ pillar['otelcol_chart'] }}/values-logs.yaml
     - require:
@@ -761,7 +851,7 @@ logging:
 infisical_operator:
   cmd.run:
     - name: |
-        helm upgrade --install infisical-operator {{ pillar['infisical_operator_chart'] }} \
+        helm upgrade --install --history-max 3 infisical-operator {{ pillar['infisical_operator_chart'] }} \
           --namespace infisical-operator-system --create-namespace \
           --values {{ pillar['infisical_operator_chart'] }}/values-kubestack.yaml
         kubectl apply -f - <<'MANIFEST'
@@ -792,17 +882,17 @@ infisical_operator:
 github_runners:
   cmd.run:
     - name: |
-        helm upgrade --install arc {{ pillar['arc_controller_chart'] }} \
+        helm upgrade --install --history-max 3 arc {{ pillar['arc_controller_chart'] }} \
           --namespace arc-systems --create-namespace \
           --values {{ pillar['arc_controller_chart'] }}/values-kubestack.yaml
         kubectl apply -f {{ pillar['github_runners_manifest'] }}
-        helm upgrade --install trix-cluster {{ pillar['arc_scale_set_chart'] }} \
+        helm upgrade --install --history-max 3 trix-cluster {{ pillar['arc_scale_set_chart'] }} \
           --namespace arc-runners \
           --values {{ pillar['arc_scale_set_chart'] }}/values-trix-cluster.yaml
-        helm upgrade --install trix-deploy {{ pillar['arc_scale_set_chart'] }} \
+        helm upgrade --install --history-max 3 trix-deploy {{ pillar['arc_scale_set_chart'] }} \
           --namespace arc-runners \
           --values {{ pillar['arc_scale_set_chart'] }}/values-trix-deploy.yaml
-        helm upgrade --install plantain-build {{ pillar['arc_scale_set_chart'] }} \
+        helm upgrade --install --history-max 3 plantain-build {{ pillar['arc_scale_set_chart'] }} \
           --namespace arc-runners \
           --values {{ pillar['arc_scale_set_chart'] }}/values-plantain-build.yaml
     - require:

@@ -1,11 +1,18 @@
 crio_version: v1.36
 k8s_version: v1.36
+# primary control-plane node's own (static) address
 k8s_api_ip: 10.144.138.245
+# floating api endpoint held by kube-vip on whichever control-plane node leads (arp failover).
+# keep it outside the router's dhcp range and the cilium lb pool (lb_ip_start..lb_ip_stop)
+k8s_api_vip: 10.144.138.240
+kube_vip_image: ghcr.io/kube-vip/kube-vip:v1.3.1
 # control-plane nodes, matched against each node's ipv4 addresses (or minion id).
 # the first one runs kubeadm init (it owns k8s_api_ip) and installs the cluster add-ons;
 # the rest join as extra control-plane nodes. any node not listed joins as a worker.
 k8s_masters:
   - 10.144.138.245
+  - 10.144.138.249
+  - 10.144.138.244
 k8s_svc_port: 6443
 cilium_version: 1.19.4
 pod_cidr: 10.244.0.0/16
