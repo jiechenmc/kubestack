@@ -18,6 +18,15 @@ config:
     jaeger: null
     zipkin: null
     prometheus: null # own metrics are scraped by the ServiceMonitor instead
+  processors:
+    # python asgi/fastapi instrumentation adds an internal span per message sent/received
+    # ("GET /x http send"); always leaf children of the request span, so dropping them loses nothing.
+    # (an app's own setup could pass exclude_spans; the operator-injected agent has no env for it)
+    filter/asgi-messages:
+      error_mode: ignore
+      traces:
+        span:
+          - 'kind == SPAN_KIND_INTERNAL and IsMatch(name, " http (send|receive)$")'
   exporters:
     debug: null
     otlp/tempo:
@@ -30,7 +39,7 @@ config:
       metrics: null
       traces:
         receivers: [otlp]
-        processors: [memory_limiter, batch]
+        processors: [memory_limiter, filter/asgi-messages, batch]
         exporters: [otlp/tempo]
 
 ports:
