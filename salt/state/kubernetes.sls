@@ -14,8 +14,14 @@
 {% set is_master = my_master_ips | length > 0 %}
 {% set is_primary = primary in node_addrs %}
 {% set crio_socket = 'unix:///var/run/crio/crio.sock' %}
-{# masters must also run an api server, so a node joined as a worker gets re-joined as a master #}
-{% set node_joined = kubelet_matches_ip ~ (" && test -e /etc/kubernetes/manifests/kube-apiserver.yaml" if is_master else "") %}
+{# joined = part of the cluster at the api endpoint. kubeadm points a control-plane node's kubelet.conf
+   at its own local api server, so masters are checked via admin.conf; they must also run an api
+   server, so a node joined as a worker gets re-joined as a master #}
+{% if is_master %}
+{% set node_joined = cluster_matches_ip ~ " && test -e /etc/kubernetes/manifests/kube-apiserver.yaml" %}
+{% else %}
+{% set node_joined = kubelet_matches_ip %}
+{% endif %}
 {% set my_ip = my_master_ips[0] if is_master else '' %}
 {% set vip_iface = [] %}
 {% for iface, addrs in salt['grains.get']('ip4_interfaces', {}).items() if my_ip in addrs %}
