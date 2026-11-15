@@ -37,6 +37,9 @@ loki:
   compactor:
     retention_enabled: true
     delete_request_store: s3
+  # groups similar log lines into patterns (grafana logs drilldown's "patterns" tab)
+  pattern_ingester:
+    enabled: true
 
 singleBinary:
   replicas: 1

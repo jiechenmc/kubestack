@@ -1,0 +1,16 @@
+# grafana dashboards as ConfigMaps for the grafana sidecar (label grafana_dashboard=1, any namespace;
+# the grafana_folder annotation picks the folder). synced by the kube-prometheus-stack argo cd app.
+# pod-overview.json: one pod's cpu/memory/restarts (cortex), logs (loki) and traces (tempo); loki log
+# lines link to it via the "Pod overview" derived field
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: Kubernetes
+configMapGenerator:
+  - name: grafana-dashboard-pod-overview
+    files: [dashboards/pod-overview.json]

@@ -300,6 +300,12 @@ grafana:
   sidecar:
     datasources:
       isDefaultDatasource: false
+    # dashboards from ConfigMaps labeled grafana_dashboard=1 (any namespace); the grafana_folder
+    # annotation picks the folder (kubernetes/infrastructure/grafana: pod overview)
+    dashboards:
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
   additionalDataSources:
     - name: Cortex
       uid: cortex
@@ -315,8 +321,24 @@ grafana:
       jsonData:
         serviceMap:
           datasourceUid: prometheus
+        # the span's pod, one click away: cpu, memory, restarts of the pod (and namespace) it ran in,
+        # from the k8s.* resource attributes the collector's k8sattributes processor adds
         tracesToMetrics:
-          datasourceUid: prometheus
+          datasourceUid: cortex
+          spanStartTimeShift: -15m
+          spanEndTimeShift: 15m
+          tags:
+            - key: k8s.namespace.name
+              value: namespace
+            - key: k8s.pod.name
+              value: pod
+          queries:
+            - name: Pod CPU (cores)
+              query: sum by (pod) (rate(container_cpu_usage_seconds_total{$$__tags, container!=""}[2m]))
+            - name: Pod memory (working set)
+              query: sum by (pod) (container_memory_working_set_bytes{$$__tags, container!=""})
+            - name: Pod restarts
+              query: sum by (pod) (kube_pod_container_status_restarts_total{$$__tags})
         nodeGraph:
           enabled: true
         tracesToLogsV2:
@@ -337,6 +359,12 @@ grafana:
             matcherRegex: trace_id
             datasourceUid: tempo
             url: "$${__value.raw}"
+          # every log line links to its pod's overview (stats + logs + traces together)
+          - name: Pod overview
+            matcherType: label
+            matcherRegex: k8s_pod_name
+            url: "/d/pod-overview/pod-overview?var-namespace=$$__all&var-pod=$${__value.raw}&$${__url_time_range}"
+            urlDisplayLabel: Pod overview
   service:
     type: LoadBalancer
     annotations:
