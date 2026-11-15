@@ -1,0 +1,5 @@
+# kubestack overrides for cloudnative-pg (chart defaults stay in values.yaml)
+monitoring:
+  podMonitorEnabled: true
+  grafanaDashboard:
+    create: true

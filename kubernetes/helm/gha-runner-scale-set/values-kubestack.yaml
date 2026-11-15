@@ -1,0 +1,5 @@
+# shared by every scale set (values-<name>.yaml layers on top). argo cd renders charts without
+# cluster access, so the chart's lookup-based controller discovery fails; name the controller explicitly
+controllerServiceAccount:
+  namespace: arc-systems
+  name: arc-gha-rs-controller

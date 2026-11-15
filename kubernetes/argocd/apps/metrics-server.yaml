@@ -1,21 +1,21 @@
-# volumesnapshot crds + snapshot-controller; the ceph csi drivers' csi-snapshotter sidecars need them
+# metrics.k8s.io api (kubectl top, hpa)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: snapshot-controller
+  name: metrics-server
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
-  source:
-    repoURL: https://github.com/jiechenmc/kubestack.git
-    targetRevision: main
-    path: kubernetes/helm/snapshot-controller
-    helm:
-      releaseName: snapshot-controller
-      valueFiles:
-        - values-kubestack.yaml
+  sources:
+    - repoURL: https://github.com/jiechenmc/kubestack.git
+      targetRevision: main
+      path: kubernetes/helm/metrics-server
+      helm:
+        releaseName: metrics-server
+        valueFiles:
+          - values-kubestack.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
@@ -24,6 +24,7 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
+      - CreateNamespace=true
       - ServerSideApply=true
     retry:
       limit: 10

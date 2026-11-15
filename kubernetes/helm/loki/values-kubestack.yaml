@@ -1,6 +1,6 @@
 # kubestack overrides for loki (chart defaults stay in values.yaml)
 # chart: grafana-community/loki, monolithic (single binary)
-# chunks + index in the ceph rgw bucket from the "loki-bucket" ObjectBucketClaim (salt state logging)
+# chunks + index in the ceph rgw bucket from the "loki-bucket" ObjectBucketClaim (kubernetes/infrastructure/logging)
 
 deploymentMode: Monolithic
 

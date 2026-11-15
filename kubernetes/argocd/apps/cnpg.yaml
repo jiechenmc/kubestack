@@ -1,0 +1,34 @@
+# cloudnative-pg operator: manages postgres Cluster resources
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cnpg
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/jiechenmc/kubestack.git
+      targetRevision: main
+      path: kubernetes/helm/cloudnative-pg
+      helm:
+        releaseName: cnpg
+        valueFiles:
+          - values.yaml
+          - values-kubestack.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cnpg-system
+  syncPolicy:
+    automated:
+      prune: false  # operator chart owns its crds; deleting one deletes every resource of that kind
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m

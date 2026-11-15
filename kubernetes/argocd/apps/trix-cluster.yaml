@@ -1,0 +1,34 @@
+# runner scale set: jiechenmc/trix pr previews
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trix-cluster
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/jiechenmc/kubestack.git
+      targetRevision: main
+      path: kubernetes/helm/gha-runner-scale-set
+      helm:
+        releaseName: trix-cluster
+        valueFiles:
+          - values-kubestack.yaml
+          - values-trix-cluster.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arc-runners
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m

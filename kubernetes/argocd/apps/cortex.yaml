@@ -1,0 +1,36 @@
+# cortex: long-term prometheus storage (remote write), blocks in a ceph rgw bucket
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cortex
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/jiechenmc/kubestack.git
+      targetRevision: main
+      path: kubernetes/helm/cortex
+      helm:
+        releaseName: cortex
+        valueFiles:
+          - values-kubestack.yaml
+    - repoURL: https://github.com/jiechenmc/kubestack.git
+      targetRevision: main
+      path: kubernetes/infrastructure/cortex
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cortex
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        maxDuration: 5m

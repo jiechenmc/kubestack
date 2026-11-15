@@ -1,7 +1,7 @@
 # Runner scale set "trix-deploy": runs only jiechenmc/trix's production deploy
 # job (`runs-on: trix-deploy`). Separate from trix-cluster so preview jobs
-# never carry production permissions. Installed by the github_runners salt
-# state; permissions in kubernetes/manifests/github-runners.yaml.
+# never carry production permissions. Synced by argo cd (kubernetes/argocd/apps);
+# permissions in kubernetes/manifests/github-runners.yaml.
 #
 # Repo-level runners can't be limited to the main branch, so anyone who can
 # push a branch to the repo could target these -- hence the narrow role.
