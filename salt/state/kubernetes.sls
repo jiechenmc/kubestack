@@ -1,6 +1,17 @@
 {% set home = salt['environ.get']('HOME') %}
 {# true when a cluster already exists for the current k8s_api_ip #}
 {% set cluster_matches_ip = "grep -qs 'server: https://" ~ pillar['k8s_api_ip'] ~ ":" ~ pillar['k8s_svc_port'] ~ "$' /etc/kubernetes/admin.conf" %}
+{# true when this node's kubelet is already joined to the cluster at k8s_api_ip #}
+{% set kubelet_matches_ip = "grep -qs 'server: https://" ~ pillar['k8s_api_ip'] ~ ":" ~ pillar['k8s_svc_port'] ~ "$' /etc/kubernetes/kubelet.conf" %}
+
+{# node role: k8s_masters lists the control-plane nodes, anything not listed is a worker #}
+{% set node_addrs = salt['grains.get']('ipv4', []) + [grains['id']] %}
+{% set masters = pillar.get('k8s_masters', [pillar['k8s_api_ip']]) %}
+{% set primary = masters[0] %}
+{% set my_master_ips = masters | select('in', node_addrs) | list %}
+{% set is_master = my_master_ips | length > 0 %}
+{% set is_primary = primary in node_addrs %}
+{% set crio_socket = 'unix:///var/run/crio/crio.sock' %}
 
 disable_swap:
   cmd.run:
@@ -97,6 +108,26 @@ firewall_lan_to_pods:
     - onlyif: systemctl is-active --quiet firewalld
     - unless: firewall-cmd --permanent --info-policy lan-to-pods
 
+# kubelet, cilium health/hubble, nodeports on every node; api server, etcd, scheduler and
+# controller-manager on control-plane nodes
+{% set k8s_ports = ['10250/tcp', '4240/tcp', '4244/tcp', '30000-32767/tcp'] %}
+{% if is_master %}
+{% set k8s_ports = k8s_ports + [pillar['k8s_svc_port'] ~ '/tcp', '2379-2380/tcp', '10257/tcp', '10259/tcp'] %}
+{% endif %}
+firewall_k8s_ports:
+  cmd.run:
+    - name: |
+{%- for port in k8s_ports %}
+        firewall-cmd --permanent --zone=public --add-port={{ port }}
+{%- endfor %}
+    - onlyif: systemctl is-active --quiet firewalld
+    - unless: >-
+        ports="$(firewall-cmd --permanent --zone=public --list-ports)";
+{%- for port in k8s_ports %}
+        echo " $ports " | grep -qF " {{ port }} " &&
+{%- endfor %}
+        true
+
 firewall_reload:
   cmd.run:
     - name: firewall-cmd --reload
@@ -105,6 +136,7 @@ firewall_reload:
       - cmd: firewall_pod_cidr
       - cmd: firewall_service_cidr
       - cmd: firewall_lan_to_pods
+      - cmd: firewall_k8s_ports
 
 enable_br_netfilter:
   kmod.present:
@@ -115,16 +147,66 @@ enable_ip_forward:
     - name: net.ipv4.ip_forward
     - value: 1
 
-kubeconfig_env:
-  file.append:
-    - name: /etc/profile.d/kubernetes.sh
-    - text: 'export KUBECONFIG=/etc/kubernetes/admin.conf'
+# desktop selinux-denial helper; its SetroubleshootPrivileged.py leaks memory without bound
+# (14Gi after a week on a worker). denials still land in the audit log without it
+remove_setroubleshoot:
+  pkg.removed:
+    - pkgs:
+      - setroubleshoot-server
+      - setroubleshoot-plugins
 
 add_autocomplete_to_zshrc:
   file.append:
     - name: {{ home }}/.zshrc
     - text: "source <(kubectl completion zsh)"
 
+{% if is_master %}
+kubeconfig_env:
+  file.append:
+    - name: /etc/profile.d/kubernetes.sh
+    - text: 'export KUBECONFIG=/etc/kubernetes/admin.conf'
+{% endif %}
+
+{% if not is_primary %}
+# secondary control-plane and worker nodes: join the cluster at k8s_api_ip.
+# the join command comes from pillar k8s_join_command when set, e.g.
+#   salt-call state.apply pillar='{"k8s_join_command": "kubeadm join ..."}'
+# (from `kubeadm token create --print-join-command` on the primary), otherwise it is
+# fetched over ssh from the primary master, which needs root key access to it.
+kubeadm_join_reset:
+  cmd.run:
+    - name: |
+        kubeadm reset -f --cri-socket={{ crio_socket }}
+        rm -rf /etc/cni/net.d/* /var/lib/cni /var/run/cilium
+        ip link delete cilium_host 2>/dev/null || true
+        ip link delete cilium_vxlan 2>/dev/null || true
+    - onlyif: test -e /etc/kubernetes/kubelet.conf
+    - unless: {{ kubelet_matches_ip | yaml_encode }}
+    - require:
+      - service: crio_service
+
+kubeadm_join:
+  cmd.run:
+    - name: |
+        set -e
+{%- if pillar.get('k8s_join_command') %}
+        join_cmd={{ pillar['k8s_join_command'] | yaml_encode }}
+{%- else %}
+        join_cmd="$(ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new root@{{ primary }} kubeadm token create --print-join-command)"
+{%- endif %}
+{%- if is_master %}
+        cert_key="$(ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new root@{{ primary }} kubeadm init phase upload-certs --upload-certs | tail -1)"
+        $join_cmd --cri-socket={{ crio_socket }} --control-plane --certificate-key "$cert_key" --apiserver-advertise-address={{ my_master_ips[0] }}
+{%- else %}
+        $join_cmd --cri-socket={{ crio_socket }}
+{%- endif %}
+    - unless: {{ kubelet_matches_ip | yaml_encode }}
+    - require:
+      - cmd: kubeadm_join_reset
+      - service: kubectl_service
+      - kmod: enable_br_netfilter
+      - sysctl: enable_ip_forward
+{% else %}
 static_ip:
   cmd.run:
     - name: |
@@ -153,10 +235,24 @@ kubeadm_reset:
 
 kubeadm_init:
   cmd.run:
-    - name: kubeadm init --cri-socket=unix:///var/run/crio/crio.sock --skip-phases=addon/kube-proxy --apiserver-advertise-address={{ pillar['k8s_api_ip'] }} --service-cidr={{ pillar['service_cidr'] }}
+    - name: kubeadm init --cri-socket={{ crio_socket }} --skip-phases=addon/kube-proxy --apiserver-advertise-address={{ pillar['k8s_api_ip'] }} --control-plane-endpoint={{ pillar['k8s_api_ip'] }}:{{ pillar['k8s_svc_port'] }} --service-cidr={{ pillar['service_cidr'] }}
     - unless: {{ cluster_matches_ip | yaml_encode }}
     - require:
       - cmd: kubeadm_reset
+    - env:
+      - KUBECONFIG: /etc/kubernetes/admin.conf
+
+# kubeadm refuses extra control-plane joins without a controlPlaneEndpoint; clusters
+# initialized before --control-plane-endpoint was passed above lack one
+kubeadm_control_plane_endpoint:
+  cmd.run:
+    - name: |
+        kubectl -n kube-system get cm kubeadm-config -o yaml \
+          | sed '/^  ClusterConfiguration: |$/a\    controlPlaneEndpoint: {{ pillar['k8s_api_ip'] }}:{{ pillar['k8s_svc_port'] }}' \
+          | kubectl replace -f -
+    - unless: kubectl -n kube-system get cm kubeadm-config -o jsonpath='{.data.ClusterConfiguration}' | grep -q '^controlPlaneEndpoint:'
+    - require:
+      - cmd: kubeadm_init
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
 
@@ -713,3 +809,4 @@ github_runners:
       - cmd: infisical_operator
     - env:
       - KUBECONFIG: /etc/kubernetes/admin.conf
+{% endif %}

@@ -7,3 +7,13 @@ telemetry:
     # metrics are behind authn/authz: the salt state binds the chart's metrics-reader clusterrole
     # to kube-prometheus-stack's prometheus service account
     enabled: true
+
+controllerManager:
+  manager:
+    resources:
+      # 128Mi chart default got oom-killed: its informer caches every Secret in the cluster,
+      # including the large helm release secrets
+      limits:
+        memory: 256Mi
+      requests:
+        memory: 128Mi

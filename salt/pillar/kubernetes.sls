@@ -1,6 +1,11 @@
 crio_version: v1.36
 k8s_version: v1.36
 k8s_api_ip: 10.144.138.245
+# control-plane nodes, matched against each node's ipv4 addresses (or minion id).
+# the first one runs kubeadm init (it owns k8s_api_ip) and installs the cluster add-ons;
+# the rest join as extra control-plane nodes. any node not listed joins as a worker.
+k8s_masters:
+  - 10.144.138.245
 k8s_svc_port: 6443
 cilium_version: 1.19.4
 pod_cidr: 10.244.0.0/16
