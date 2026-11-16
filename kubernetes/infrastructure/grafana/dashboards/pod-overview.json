@@ -74,38 +74,6 @@
           "text": "",
           "value": ""
         }
-      },
-      {
-        "name": "profile_type",
-        "label": "Profile",
-        "type": "custom",
-        "query": "CPU (python) : process_cpu:cpu:nanoseconds:cpu:nanoseconds, CPU (node) : wall:cpu:nanoseconds:wall:nanoseconds, Wall clock (node) : wall:wall:nanoseconds:wall:nanoseconds, Heap in use (node) : memory:inuse_space:bytes:inuse_space:bytes",
-        "options": [
-          {
-            "text": "CPU (python)",
-            "value": "process_cpu:cpu:nanoseconds:cpu:nanoseconds",
-            "selected": true
-          },
-          {
-            "text": "CPU (node)",
-            "value": "wall:cpu:nanoseconds:wall:nanoseconds",
-            "selected": false
-          },
-          {
-            "text": "Wall clock (node)",
-            "value": "wall:wall:nanoseconds:wall:nanoseconds",
-            "selected": false
-          },
-          {
-            "text": "Heap in use (node)",
-            "value": "memory:inuse_space:bytes:inuse_space:bytes",
-            "selected": false
-          }
-        ],
-        "current": {
-          "text": "CPU (python)",
-          "value": "process_cpu:cpu:nanoseconds:cpu:nanoseconds"
-        }
       }
     ]
   },
@@ -956,7 +924,7 @@
     {
       "id": 13,
       "type": "flamegraph",
-      "title": "Profile: $profile_type",
+      "title": "CPU profile",
       "datasource": {
         "type": "grafana-pyroscope-datasource",
         "uid": "pyroscope"
@@ -975,12 +943,12 @@
             "uid": "pyroscope"
           },
           "queryType": "profile",
-          "profileTypeId": "$profile_type",
+          "profileTypeId": "process_cpu:cpu:nanoseconds:cpu:nanoseconds",
           "labelSelector": "{namespace=~\"$namespace\", pod=~\"$pod\"}",
           "groupBy": []
         }
       ],
-      "description": "Continuous profile of the selected pods (only apps instrumented with a pyroscope sdk). Pick the profile type above: python cpu (trix api), node cpu / wall / heap (trix auth)."
+      "description": "CPU flame graph of the selected pods, for apps that push profiles with a pyroscope sdk (trix api)"
     }
   ]
 }
