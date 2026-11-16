@@ -341,6 +341,14 @@ grafana:
               query: sum by (pod) (kube_pod_container_status_restarts_total{$$__tags})
         nodeGraph:
           enabled: true
+        # cpu profile of the request: the sdk tags its samples with the root span's id
+        # (pyroscope.profile.id on the span; trix api, see trix_api/profiling.py)
+        tracesToProfiles:
+          datasourceUid: pyroscope
+          profileTypeId: process_cpu:cpu:nanoseconds:cpu:nanoseconds
+          tags:
+            - key: service.name
+              value: service_name
         tracesToLogsV2:
           datasourceUid: loki
           spanStartTimeShift: -5m
@@ -365,6 +373,12 @@ grafana:
             matcherRegex: k8s_pod_name
             url: "/d/pod-overview/pod-overview?var-namespace=$$__all&var-pod=$${__value.raw}&$${__url_time_range}"
             urlDisplayLabel: Pod overview
+    # continuous profiling (argo cd app pyroscope); profiles drilldown app in grafana's menu
+    - name: Pyroscope
+      uid: pyroscope
+      type: grafana-pyroscope-datasource
+      url: http://pyroscope.profiling.svc:4040
+      access: proxy
   service:
     type: LoadBalancer
     annotations:

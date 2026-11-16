@@ -1,0 +1,13 @@
+# rook creates the bucket plus a pyroscope-bucket Secret/ConfigMap with its s3 credentials and endpoint.
+# the bucket storage class reclaims with Delete, so argo must never delete this claim
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: pyroscope-bucket
+  namespace: profiling
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  bucketName: pyroscope
+  storageClassName: rook-ceph-bucket

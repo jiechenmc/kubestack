@@ -1,0 +1,44 @@
+# kubestack overrides for pyroscope (chart defaults stay in values.yaml): one binary, v2 storage,
+# profiles in the ceph rgw bucket from the "pyroscope-bucket" ObjectBucketClaim
+# (kubernetes/infrastructure/profiling). apps push to http://pyroscope.profiling.svc:4040 with the
+# language sdks (trix: api python, auth node)
+
+pyroscope:
+  extraArgs:
+    log.level: info
+    # ${AWS_*} in the config below come from the bucket claim's secret
+    config.expand-env: "true"
+  extraEnvFrom:
+    - secretRef:
+        name: pyroscope-bucket
+  structuredConfig:
+    storage:
+      backend: s3
+      s3:
+        endpoint: rook-ceph-rgw-objectstore.rook-ceph.svc:80
+        bucket_name: pyroscope
+        access_key_id: ${AWS_ACCESS_KEY_ID}
+        secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+        insecure: true
+        bucket_lookup_type: path-style
+    limits:
+      retention_period: 14d
+    analytics:
+      reporting_enabled: false
+  # local state: the metastore (raft) and segments not yet flushed to the bucket
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+# profiles are pushed by the apps' sdks; no bundled collection agent
+alloy:
+  enabled: false
+
+serviceMonitor:
+  enabled: true
