@@ -74,6 +74,38 @@
           "text": "",
           "value": ""
         }
+      },
+      {
+        "name": "profile_type",
+        "label": "Profile",
+        "type": "custom",
+        "query": "CPU (python) : process_cpu:cpu:nanoseconds:cpu:nanoseconds, CPU (node) : wall:cpu:nanoseconds:wall:nanoseconds, Wall clock (node) : wall:wall:nanoseconds:wall:nanoseconds, Heap in use (node) : memory:inuse_space:bytes:inuse_space:bytes",
+        "options": [
+          {
+            "text": "CPU (python)",
+            "value": "process_cpu:cpu:nanoseconds:cpu:nanoseconds",
+            "selected": true
+          },
+          {
+            "text": "CPU (node)",
+            "value": "wall:cpu:nanoseconds:wall:nanoseconds",
+            "selected": false
+          },
+          {
+            "text": "Wall clock (node)",
+            "value": "wall:wall:nanoseconds:wall:nanoseconds",
+            "selected": false
+          },
+          {
+            "text": "Heap in use (node)",
+            "value": "memory:inuse_space:bytes:inuse_space:bytes",
+            "selected": false
+          }
+        ],
+        "current": {
+          "text": "CPU (python)",
+          "value": "process_cpu:cpu:nanoseconds:cpu:nanoseconds"
+        }
       }
     ]
   },
@@ -920,6 +952,35 @@
           }
         ]
       }
+    },
+    {
+      "id": 13,
+      "type": "flamegraph",
+      "title": "Profile: $profile_type",
+      "datasource": {
+        "type": "grafana-pyroscope-datasource",
+        "uid": "pyroscope"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-pyroscope-datasource",
+            "uid": "pyroscope"
+          },
+          "queryType": "profile",
+          "profileTypeId": "$profile_type",
+          "labelSelector": "{namespace=~\"$namespace\", pod=~\"$pod\"}",
+          "groupBy": []
+        }
+      ],
+      "description": "Continuous profile of the selected pods (only apps instrumented with a pyroscope sdk). Pick the profile type above: python cpu (trix api), node cpu / wall / heap (trix auth)."
     }
   ]
 }
