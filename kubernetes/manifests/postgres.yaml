@@ -20,9 +20,12 @@ spec:
       method: any
       number: 1
       dataDurability: required
+  # trix at ~100 users: ~1.6 KB per place, so even every account at its place
+  # limit (3000 paid) is ~0.5 GB; wal (wal_keep_size 512MB) takes ~0.6 GB more.
+  # Photos are in the bucket, not here. Grows in place (resizeInUseVolumes).
   storage:
     storageClass: rook-ceph-block
-    size: 5Gi
+    size: 10Gi
   bootstrap:
     initdb:
       database: app
