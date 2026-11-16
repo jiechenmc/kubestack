@@ -123,9 +123,11 @@ rules:
     resources: [objectbucketclaims]
     resourceNames: [trix-images]
     verbs: [get, patch]
+  # Patch only: a new InfisicalSecret is created by hand once (creating can't be
+  # limited by name, and one could sync any Infisical secret into default).
   - apiGroups: ["secrets.infisical.com"]
     resources: [infisicalsecrets]
-    resourceNames: [trix-auth]
+    resourceNames: [trix-auth, trix-billing]
     verbs: [get, patch]
   # `kubectl rollout status` follows the deployment's replicasets/pods.
   - apiGroups: ["apps"]
