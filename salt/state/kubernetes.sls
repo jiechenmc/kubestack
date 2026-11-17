@@ -69,6 +69,12 @@ crio_repo:
     - user: root
     - group: root
 
+# permissive on every node, now and across reboots (/etc/selinux/config). enforcing broke rook's
+# chown-container-data-dir init container on /var/lib/ceph (mgr, exporter and rgw crashlooped)
+selinux_permissive:
+  selinux.mode:
+    - name: permissive
+
 install_container_selinux:
   pkg.installed:
     - name: container-selinux
