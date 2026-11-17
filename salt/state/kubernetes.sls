@@ -28,6 +28,24 @@
 {% do vip_iface.append(iface) %}
 {% endfor %}
 
+{# hostname = node name: <model>-<serial>-<mem>gb, e.g. optiplex-cncv9t2-16gb. the serial is left out
+   when the firmware only has a placeholder ("Default string", "To be filled by O.E.M.", ...) #}
+{% set model = (grains.get('productname', '') ~ ' ').split()[0] | lower | regex_replace('[^a-z0-9-]', '') %}
+{% set serial = grains.get('serialnumber', '') | lower | regex_replace('[^a-z0-9]', '') %}
+{% set serial_placeholders = ['', 'defaultstring', 'tobefilledbyoem', 'systemserialnumber', 'notspecified', 'none', '0', '123456789'] %}
+{# mem_total is a bit under the installed size (kernel reservations), so round up to a common dimm total #}
+{% set mem_raw = grains.get('mem_total', 0) / 1024 %}
+{% set mem_gb = ([4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512] | select('>=', mem_raw) | first) | default(mem_raw | round | int, true) %}
+{% set name_parts = [model or 'node'] + ([] if serial in serial_placeholders else [serial]) + [mem_gb ~ 'gb'] %}
+{% set node_hostname = name_parts | join('-') %}
+
+# set before joining only: a joined node's kubelet is registered (and has its client cert) under its
+# old name, so renaming it would orphan the node
+set_hostname:
+  cmd.run:
+    - name: hostnamectl set-hostname {{ node_hostname }}
+    - unless: {{ ('test "$(hostname)" = ' ~ node_hostname ~ ' || (' ~ node_joined ~ ')') | yaml_encode }}
+
 disable_swap:
   cmd.run:
     - name: swapoff -a
